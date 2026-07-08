@@ -293,6 +293,13 @@
     background:rgba(0,217,255,0.06); border:1px solid rgba(0,217,255,0.18); cursor:pointer; font-size:13px; color:var(--accent); }
   #taskbarPinned .pin-icon:hover{ background:rgba(0,217,255,0.16); }
   #systemTray{ display:flex; align-items:center; gap:12px; margin-right:14px; font-size:13px; color:var(--accent); }
+
+  /* ---------- neon SVG icon system (matches reference theme) ---------- */
+  .neon-svg{ stroke:var(--accent); fill:none; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round;
+    filter:drop-shadow(0 0 4px rgba(0,217,255,0.85)); display:block; }
+  .neon-icon-sm{ display:inline-flex; vertical-align:middle; width:16px; height:16px; margin-right:2px; }
+  .icon .glyph svg, .pin-icon svg, .store-item .glyph svg{ width:60%; height:60%; }
+  .pin-icon svg{ width:55%; height:55%; }
 </style>
 </head>
 <body>
@@ -324,24 +331,24 @@
     <div class="gc-row"><span class="gc-dot"></span><span>WhatsApp channel: Connected</span></div>
   </div>
   <div id="icons">
-    <div class="icon" onclick="openApp('mail')"><div class="glyph">&#9993;</div><div class="label">Mail</div></div>
-    <div class="icon" onclick="openApp('calendar')"><div class="glyph">&#128197;</div><div class="label">Calendar</div></div>
-    <div class="icon" onclick="openApp('files')"><div class="glyph">&#128193;</div><div class="label">Files</div></div>
-    <div class="icon" onclick="openApp('terminal')"><div class="glyph">&gt;_</div><div class="label">Terminal</div></div>
-    <div class="icon" onclick="openApp('music')"><div class="glyph">&#127925;</div><div class="label">Music</div></div>
-    <div class="icon" onclick="openApp('browser')"><div class="glyph">&#127760;</div><div class="label">Browser</div></div>
-    <div class="icon" onclick="openApp('settings')"><div class="glyph">&#9881;</div><div class="label">Settings</div></div>
-    <div class="icon" onclick="openApp('photos')"><div class="glyph">&#128247;</div><div class="label">Photos</div></div>
-    <div class="icon" onclick="openApp('notes')"><div class="glyph">&#128221;</div><div class="label">Notes</div></div>
-    <div class="icon" onclick="openApp('cloud')"><div class="glyph">&#9729;</div><div class="label">Cloud</div></div>
-    <div class="icon" onclick="openApp('sysinfo')"><div class="glyph">&#128187;</div><div class="label">System Monitor</div></div>
-    <div class="icon" onclick="openApp('maps')"><div class="glyph">&#128506;</div><div class="label">Maps</div></div>
-    <div class="icon" onclick="openApp('news')"><div class="glyph">&#128240;</div><div class="label">News</div></div>
-    <div class="icon" onclick="openApp('chat')"><div class="glyph">&#9679;</div><div class="label">Jarvis Chat</div></div>
-    <div class="icon" onclick="openApp('store')"><div class="glyph">&#128230;</div><div class="label">Jarvis Store</div></div>
-    <div class="icon" onclick="openApp('voice')"><div class="glyph">&#127908;</div><div class="label">Voice Assistant</div></div>
-    <div class="icon" onclick="openApp('screenshot')"><div class="glyph">&#128247;</div><div class="label">Screenshot</div></div>
-    <div class="icon" onclick="openApp('bluetooth')"><div class="glyph">&#128367;</div><div class="label">Bluetooth</div></div>
+    <div class="icon" onclick="openApp('mail')"><div class="glyph"><svg class="neon-svg" viewBox="0 0 24 24" style="width:60%;height:60%;"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></div><div class="label">Mail</div></div>
+    <div class="icon" onclick="openApp('calendar')"><div class="glyph"><svg class="neon-svg" viewBox="0 0 24 24" style="width:60%;height:60%;"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><circle cx="9" cy="14" r="1"/><circle cx="15" cy="14" r="1"/></svg></div><div class="label">Calendar</div></div>
+    <div class="icon" onclick="openApp('files')"><div class="glyph"><svg class="neon-svg" viewBox="0 0 24 24" style="width:60%;height:60%;"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg></div><div class="label">Files</div></div>
+    <div class="icon" onclick="openApp('terminal')"><div class="glyph"><svg class="neon-svg" viewBox="0 0 24 24" style="width:60%;height:60%;"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M13 15h4"/></svg></div><div class="label">Terminal</div></div>
+    <div class="icon" onclick="openApp('music')"><div class="glyph"><svg class="neon-svg" viewBox="0 0 24 24" style="width:60%;height:60%;"><circle cx="6" cy="18" r="2.5"/><circle cx="17" cy="16" r="2.5"/><path d="M8.5 18V6l9-2v12"/></svg></div><div class="label">Music</div></div>
+    <div class="icon" onclick="openApp('browser')"><div class="glyph"><svg class="neon-svg" viewBox="0 0 24 24" style="width:60%;height:60%;"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg></div><div class="label">Browser</div></div>
+    <div class="icon" onclick="openApp('settings')"><div class="glyph"><svg class="neon-svg" viewBox="0 0 24 24" style="width:60%;height:60%;"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg></div><div class="label">Settings</div></div>
+    <div class="icon" onclick="openApp('photos')"><div class="glyph"><svg class="neon-svg" viewBox="0 0 24 24" style="width:60%;height:60%;"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 16l-5-5-4 4-3-3-5 5"/></svg></div><div class="label">Photos</div></div>
+    <div class="icon" onclick="openApp('notes')"><div class="glyph"><svg class="neon-svg" viewBox="0 0 24 24" style="width:60%;height:60%;"><path d="M4 20l1-5 11-11 4 4-11 11-5 1z"/><path d="M14 5l4 4"/></svg></div><div class="label">Notes</div></div>
+    <div class="icon" onclick="openApp('cloud')"><div class="glyph"><svg class="neon-svg" viewBox="0 0 24 24" style="width:60%;height:60%;"><path d="M7 18a4 4 0 0 1-.5-8 5.5 5.5 0 0 1 10.7-1.6A4.5 4.5 0 0 1 17 18H7z"/><path d="M12 12v6M9.5 15.5L12 13l2.5 2.5"/></svg></div><div class="label">Cloud</div></div>
+    <div class="icon" onclick="openApp('sysinfo')"><div class="glyph"><svg class="neon-svg" viewBox="0 0 24 24" style="width:60%;height:60%;"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg></div><div class="label">System Monitor</div></div>
+    <div class="icon" onclick="openApp('maps')"><div class="glyph"><svg class="neon-svg" viewBox="0 0 24 24" style="width:60%;height:60%;"><path d="M12 21s7-7.5 7-12a7 7 0 1 0-14 0c0 4.5 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></svg></div><div class="label">Maps</div></div>
+    <div class="icon" onclick="openApp('news')"><div class="glyph"><svg class="neon-svg" viewBox="0 0 24 24" style="width:60%;height:60%;"><rect x="3" y="5" width="14" height="15" rx="1"/><path d="M7 9h6M7 12h6M7 15h4M17 8h4v9a2 2 0 0 1-2 2h-2"/></svg></div><div class="label">News</div></div>
+    <div class="icon" onclick="openApp('chat')"><div class="glyph"><svg class="neon-svg" viewBox="0 0 24 24" style="width:60%;height:60%;"><path d="M4 5h16v10H8l-4 4V5z"/><circle cx="8" cy="10" r=".8"/><circle cx="12" cy="10" r=".8"/><circle cx="16" cy="10" r=".8"/></svg></div><div class="label">Jarvis Chat</div></div>
+    <div class="icon" onclick="openApp('store')"><div class="glyph"><svg class="neon-svg" viewBox="0 0 24 24" style="width:60%;height:60%;"><path d="M6 8h12l-1 12H7L6 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></div><div class="label">Jarvis Store</div></div>
+    <div class="icon" onclick="openApp('voice')"><div class="glyph"><svg class="neon-svg" viewBox="0 0 24 24" style="width:60%;height:60%;"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></div><div class="label">Voice Assistant</div></div>
+    <div class="icon" onclick="openApp('screenshot')"><div class="glyph"><svg class="neon-svg" viewBox="0 0 24 24" style="width:60%;height:60%;"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg></div><div class="label">Screenshot</div></div>
+    <div class="icon" onclick="openApp('bluetooth')"><div class="glyph"><svg class="neon-svg" viewBox="0 0 24 24" style="width:60%;height:60%;"><path d="M8 7l8 6-4 3.5V4.5l4 3.5-8 6"/></svg></div><div class="label">Bluetooth</div></div>
   </div>
 </div>
 
@@ -361,13 +368,13 @@
 <div id="taskbar">
   <div id="startBtn" onclick="toggleStart()">&#9673; JARVIS</div>
   <div id="taskbarPinned">
-    <div class="pin-icon" onclick="openApp('browser')" title="Browser">&#127760;</div>
-    <div class="pin-icon" onclick="openApp('terminal')" title="Terminal">&gt;_</div>
-    <div class="pin-icon" onclick="openApp('files')" title="Files">&#128193;</div>
-    <div class="pin-icon" onclick="openApp('mail')" title="Mail">&#9993;</div>
-    <div class="pin-icon" onclick="openApp('calendar')" title="Calendar">&#128197;</div>
-    <div class="pin-icon" onclick="openApp('voice')" title="Voice Assistant">&#127908;</div>
-    <div class="pin-icon" onclick="openApp('settings')" title="Settings">&#9881;</div>
+    <div class="pin-icon" onclick="openApp('browser')" title="Browser"><svg class="neon-svg" viewBox="0 0 24 24" style="width:55%;height:55%;"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg></div>
+    <div class="pin-icon" onclick="openApp('terminal')" title="Terminal"><svg class="neon-svg" viewBox="0 0 24 24" style="width:55%;height:55%;"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M13 15h4"/></svg></div>
+    <div class="pin-icon" onclick="openApp('files')" title="Files"><svg class="neon-svg" viewBox="0 0 24 24" style="width:55%;height:55%;"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg></div>
+    <div class="pin-icon" onclick="openApp('mail')" title="Mail"><svg class="neon-svg" viewBox="0 0 24 24" style="width:55%;height:55%;"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></div>
+    <div class="pin-icon" onclick="openApp('calendar')" title="Calendar"><svg class="neon-svg" viewBox="0 0 24 24" style="width:55%;height:55%;"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><circle cx="9" cy="14" r="1"/><circle cx="15" cy="14" r="1"/></svg></div>
+    <div class="pin-icon" onclick="openApp('voice')" title="Voice Assistant"><svg class="neon-svg" viewBox="0 0 24 24" style="width:55%;height:55%;"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></div>
+    <div class="pin-icon" onclick="openApp('settings')" title="Settings"><svg class="neon-svg" viewBox="0 0 24 24" style="width:55%;height:55%;"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg></div>
   </div>
   <div id="taskApps"></div>
   <div id="systemTray">
@@ -450,7 +457,7 @@ function createWindow(id, title, glyph, contentHTML, opts={}){
   w.style.top = (opts.y || (50+Object.keys(openWindows).length*24))+'px';
   w.innerHTML = `
     <div class="win-header" onmousedown="startDrag(event,'${id}')">
-      <div class="win-title">${glyph} ${title}</div>
+      <div class="win-title"><span class="neon-icon-sm">${(typeof iconSVG==='function') ? iconSVG(id, '16px') : glyph}</span> ${title}</div>
       <div class="win-controls">
         <div class="win-btn" onclick="minimizeWindow('${id}')">&#8211;</div>
         <div class="win-btn" onclick="maximizeWindow('${id}')">&#9633;</div>
@@ -725,6 +732,6 @@ function openSettings(){
 /* Open terminal by default after boot for effect */
 setTimeout(()=>{ /* left empty intentionally — user opens apps manually */ }, 3200);
 </script>
-<script src="apps-extra.js?v=5"></script>
+<script src="apps-extra.js?v=6"></script>
 </body>
 </html>
