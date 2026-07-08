@@ -1,0 +1,5 @@
+{
+  "api_base": "PASTE_YOUR_AGENT_API_BASE_URL_HERE",
+  "api_key": "PASTE_YOUR_AGENT_API_KEY_HERE",
+  "conversation_id": ""
+}
