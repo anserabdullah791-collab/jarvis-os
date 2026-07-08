@@ -605,3 +605,63 @@ function updateSwDisplay(){
   const s = String(swSeconds%60).padStart(2,'0');
   el.textContent = `${h}:${m}:${s}`;
 }
+
+/* ---------------- HUD: Arc Reactor dashboard (real data where the browser allows it) ---------------- */
+function initHud(){
+  const hour = new Date().getHours();
+  const greetWord = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
+  const titleEl = document.getElementById('greetTitle');
+  const dateEl = document.getElementById('greetDate');
+  const subEl = document.getElementById('greetSub');
+  if(titleEl) titleEl.textContent = `${greetWord}, Stark.`;
+  if(dateEl) dateEl.textContent = new Date().toLocaleString('en-US', { weekday:'long', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+  if(subEl) subEl.textContent = 'All systems nominal.';
+
+  // CPU cores — real, from the browser
+  const cores = navigator.hardwareConcurrency || 4;
+  const cpuLoadPct = Math.min(95, 20 + Math.round(Math.random()*25));
+  setEl('statCpu', `${cores} cores`);
+  setBar('statCpuBar', cpuLoadPct);
+
+  // Memory — real where Chrome exposes it (performance.memory), else honest fallback
+  if(performance.memory && performance.memory.jsHeapSizeLimit){
+    const used = (performance.memory.usedJSHeapSize/1048576).toFixed(0);
+    const limit = (performance.memory.jsHeapSizeLimit/1048576).toFixed(0);
+    setEl('statMem', `${used}MB / ${limit}MB`);
+    setBar('statMemBar', Math.min(100, (used/limit)*100));
+  } else {
+    setEl('statMem', 'N/A (browser-restricted)');
+    setBar('statMemBar', 15);
+  }
+
+  // Network — real, from Network Information API where supported
+  if(navigator.connection){
+    const c = navigator.connection;
+    setEl('statNet', `${c.effectiveType || '4g'} · ${c.downlink || '—'}Mbps`);
+    setBar('statNetBar', Math.min(100, (c.downlink||5)*10));
+  } else {
+    setEl('statNet', navigator.onLine ? 'Online' : 'Offline');
+    setBar('statNetBar', navigator.onLine ? 80 : 5);
+  }
+
+  // Battery — real, from Battery Status API where supported
+  if(navigator.getBattery){
+    navigator.getBattery().then(b=>{
+      setEl('statBatt', `${Math.round(b.level*100)}%${b.charging ? ' (charging)' : ''}`);
+      setBar('statBattBar', b.level*100);
+      b.onlevelchange = () => { setEl('statBatt', `${Math.round(b.level*100)}%`); setBar('statBattBar', b.level*100); };
+    });
+  } else {
+    setEl('statBatt', 'N/A');
+    setBar('statBattBar', 100);
+  }
+
+  // keep CPU/network bars gently alive so the HUD feels live
+  setInterval(()=>{
+    setBar('statCpuBar', Math.min(95, 15 + Math.round(Math.random()*30)));
+  }, 4000);
+}
+function setEl(id, text){ const el = document.getElementById(id); if(el) el.textContent = text; }
+function setBar(id, pct){ const el = document.getElementById(id); if(el) el.style.width = Math.max(4,Math.min(100,pct)) + '%'; }
+
+window.addEventListener('load', () => { setTimeout(initHud, 3600); });
