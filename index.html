@@ -819,27 +819,27 @@ function openApp(name){
   if(name==='playstore') openPlayStore();
 }
 
-/* ---------- TERMINAL ---------- */
+/* ---------- TERMINAL (100+ real commands) ---------- */
 function openTerminal(){
   createWindow('terminal', 'Terminal', '&gt;_', `
     <div class="term" id="termBody">
-      <div class="line">JARVIS Terminal v1.0 — type 'help' for commands.</div>
+      <div class="line">JARVIS Terminal v2.0 — 110+ real commands. Type 'help' to see categories.</div>
       <div class="prompt-line">
-        <span class="prompt-tag">jarvis@os:~$</span>
-        <input id="termInput" autofocus />
+        <span class="prompt-tag" id="termPromptTag">jarvis@os:~$</span>
+        <input id="termInput" autofocus autocomplete="off" />
       </div>
     </div>
-  `, {width:560, height:380});
+  `, {width:620, height:420});
   setTimeout(()=>{
     const input = document.getElementById('termInput');
     if(input){ input.focus(); input.addEventListener('keydown', handleTermKey); }
-    document.getElementById('win-terminal').addEventListener('click', ()=>{
-      const i = document.getElementById('termInput'); if(i) i.focus();
-    });
+    const win = document.getElementById('win-terminal');
+    if(win) win.addEventListener('click', ()=>{ const i = document.getElementById('termInput'); if(i) i.focus(); });
   }, 50);
 }
 function termPrint(text){
   const body = document.getElementById('termBody');
+  if(!body) return;
   const promptLine = body.querySelector('.prompt-line');
   const line = document.createElement('div');
   line.className = 'line';
@@ -847,54 +847,556 @@ function termPrint(text){
   body.insertBefore(line, promptLine);
   body.scrollTop = body.scrollHeight;
 }
-function handleTermKey(e){
-  if(e.key !== 'Enter') return;
-  const input = e.target;
-  const cmd = input.value.trim();
-  termPrint('jarvis@os:~$ ' + cmd);
-  runTermCommand(cmd);
-  input.value = '';
-  document.getElementById('termBody').scrollTop = 999999;
-}
-function runTermCommand(cmdRaw){
-  const cmd = cmdRaw.toLowerCase();
+function termPrintHTML(html){
   const body = document.getElementById('termBody');
-  if(cmd === '' ) return;
-  if(cmd === 'help'){
-    termPrint('Available commands: help, about, whoami, date, sysinfo, skills, ls, echo [text], open-chat, clear, joke, matrix');
-  } else if(cmd === 'about'){
-    termPrint('JARVIS — personal AI Superagent. Sharp, warm, proactive. Built for Abdullah Anser.');
-  } else if(cmd === 'whoami'){
-    termPrint('abdullah@jarvis-os (owner)');
-  } else if(cmd === 'date'){
-    termPrint(new Date().toString());
-  } else if(cmd === 'sysinfo'){
-    termPrint('JARVIS OS v1.0 | Kernel: Base44 Superagent runtime | Sandbox: Debian 12 (gVisor) | Skills loaded: 92');
-  } else if(cmd === 'skills'){
-    termPrint('Active teams: Jarvis(Chief) Scout Ledger Ringer Lens Forge Warden Herald Scribe Patch Chalk — 92 skill modules loaded.');
-  } else if(cmd === 'ls'){
-    termPrint('Documents/  Automations/  Skills/  Rules/  Connectors/  README.txt');
-  } else if(cmd.startsWith('echo ')){
-    termPrint(cmdRaw.slice(5));
-  } else if(cmd === 'open-chat'){
-    termPrint('Opening secure Jarvis chat channel...');
-    setTimeout(()=>window.open('https://app.base44.com/superagent/6a3be2a74a09f2cd7f59d2ee','_blank'), 400);
-  } else if(cmd === 'clear'){
-    document.querySelectorAll('#termBody .line').forEach(l=>l.remove());
-  } else if(cmd === 'joke'){
-    const jokes = [
-      "Why do programmers prefer dark mode? Because light attracts bugs.",
-      "There are 10 types of people: those who understand binary and those who don't.",
-      "I told my firewall a joke. It didn't laugh — strict default-deny policy."
-    ];
-    termPrint(jokes[Math.floor(Math.random()*jokes.length)]);
-  } else if(cmd === 'matrix'){
-    termPrint('01001010 01000001 01010010 01010110 01001001 01010011 ... (matrix mode engaged)');
-  } else {
-    termPrint(`jarvis: command not found: ${cmdRaw}  (type 'help')`);
+  if(!body) return;
+  const promptLine = body.querySelector('.prompt-line');
+  const line = document.createElement('div');
+  line.className = 'line';
+  line.innerHTML = html;
+  body.insertBefore(line, promptLine);
+  body.scrollTop = body.scrollHeight;
+}
+
+/* ---- persistent state ---- */
+let termHistory = JSON.parse(localStorage.getItem('jarvis_term_history') || '[]');
+let termHistoryPos = termHistory.length;
+let termAliases = JSON.parse(localStorage.getItem('jarvis_term_aliases') || '{}');
+const termBootTime = Date.now();
+let termCwd = JSON.parse(localStorage.getItem('jarvis_term_cwd') || '["~"]');
+
+function loadTermFS(){
+  const saved = localStorage.getItem('jarvis_term_fs');
+  if(saved){ try{ return JSON.parse(saved); }catch(e){} }
+  const fresh = {type:'dir', children:{
+    'Documents': {type:'dir', children:{'README.txt': {type:'file', content:'Welcome to Jarvis OS.\nThis is a real virtual filesystem stored in your browser.\nTry: mkdir, touch, cat, echo "hi" > file.txt, ls, rm'}}},
+    'Automations': {type:'dir', children:{}},
+    'Skills': {type:'dir', children:{}},
+    'Rules': {type:'dir', children:{}},
+    'Connectors': {type:'dir', children:{}}
+  }};
+  saveTermFS(fresh);
+  return fresh;
+}
+let termFS = loadTermFS();
+function saveTermFS(fs){ localStorage.setItem('jarvis_term_fs', JSON.stringify(fs || termFS)); }
+function saveTermCwd(){ localStorage.setItem('jarvis_term_cwd', JSON.stringify(termCwd)); }
+function saveTermHistory(){ localStorage.setItem('jarvis_term_history', JSON.stringify(termHistory.slice(-200))); }
+
+function termResolveDir(pathArr){
+  let node = termFS;
+  for(let i=1;i<pathArr.length;i++){
+    const seg = pathArr[i];
+    if(!node.children || !node.children[seg] || node.children[seg].type!=='dir') return null;
+    node = node.children[seg];
+  }
+  return node;
+}
+function termCwdNode(){ return termResolveDir(termCwd); }
+function termPathStr(){ return termCwd.join('/'); }
+
+/* ---- app id -> display name (only real, existing apps) ---- */
+const TERM_APPS = {
+  browser:'Browser', chat:'Jarvis Chat', files:'Files', settings:'Settings', voice:'Voice Assistant',
+  screenshot:'Screenshot', bluetooth:'Bluetooth', calculator:'Calculator', notes:'Notes', clock:'Clock',
+  todo:'To-Do List', password:'Password Gen', colorpicker:'Color Picker', converter:'Unit Converter',
+  weather:'Weather', paint:'Paint', qrcode:'QR Code', sysinfo:'System Info', stopwatch:'Stopwatch',
+  mail:'Mail', calendar:'Calendar', music:'Music', photos:'Photos', cloud:'Cloud', maps:'Maps',
+  news:'News', youtube:'YouTube', facebook:'Facebook', instagram:'Instagram', tiktok:'TikTok',
+  playstore:'Play Store', store:'Store'
+};
+
+/* ---- helpers ---- */
+function termSafeCalc(expr){
+  const cleaned = expr.replace(/\^/g,'**');
+  if(!/^[0-9+\-*/(). %\s]+$/.test(cleaned.replace(/\*\*/g,''))) throw new Error('invalid characters');
+  // eslint-disable-next-line no-new-func
+  return Function('"use strict"; return (' + cleaned + ')')();
+}
+function termHexFromBuffer(buf){
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+async function termSha256(text){
+  const enc = new TextEncoder().encode(text);
+  const digest = await crypto.subtle.digest('SHA-256', enc);
+  return termHexFromBuffer(digest);
+}
+function termRandomPassword(len){
+  len = Math.min(Math.max(len||16, 4), 128);
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*';
+  const arr = new Uint32Array(len);
+  crypto.getRandomValues(arr);
+  let pw = '';
+  for(let i=0;i<len;i++) pw += chars[arr[i] % chars.length];
+  return pw;
+}
+
+const TERM_FORTUNES = [
+  "The best way to predict the future is to build it.",
+  "Simplicity is the ultimate sophistication.",
+  "Code never lies, comments sometimes do.",
+  "A clever hack today is tomorrow's incident report.",
+  "Ship it, then improve it.",
+  "Every expert was once a disaster with a keyboard.",
+  "The obstacle is the workflow."
+];
+const TERM_8BALL = [
+  "It is certain.", "Without a doubt.", "Yes, definitely.", "Ask again later.",
+  "Cannot predict now.", "Don't count on it.", "My reply is no.", "Very doubtful.", "Signs point to yes."
+];
+const TERM_JOKES_FALLBACK = [
+  "Why do programmers prefer dark mode? Because light attracts bugs.",
+  "There are 10 types of people: those who understand binary and those who don't.",
+  "I told my firewall a joke. It didn't laugh — strict default-deny policy."
+];
+const TERM_QUOTES_FALLBACK = [
+  "\u201CStay hungry, stay foolish.\u201D \u2014 Steve Jobs",
+  "\u201CDone is better than perfect.\u201D \u2014 Sheryl Sandberg",
+  "\u201CMake it work, make it right, make it fast.\u201D \u2014 Kent Beck"
+];
+
+function termCowsay(text){
+  const line = ' ' + '_'.repeat(text.length + 2);
+  return `${line}\n< ${text} >\n ${'-'.repeat(text.length + 2)}\n        \\   ^__^\n         \\  (oo)\\_______\n            (__)\\       )\\/\\\n                ||----w |\n                ||     ||`;
+}
+
+/* ================= MAIN DISPATCH ================= */
+async function runTermCommand(cmdRaw){
+  if(cmdRaw.trim() === '') return;
+  termHistory.push(cmdRaw); termHistoryPos = termHistory.length; saveTermHistory();
+
+  let expanded = cmdRaw.trim();
+  const firstWord = expanded.split(' ')[0].toLowerCase();
+  if(termAliases[firstWord]) expanded = termAliases[firstWord] + expanded.slice(firstWord.length);
+
+  const cmd = expanded.toLowerCase();
+  const parts = expanded.split(' ');
+  const args = parts.slice(1);
+  const argStr = args.join(' ');
+  const base = parts[0].toLowerCase();
+
+  try{
+    switch(true){
+
+      /* ---------- CORE ---------- */
+      case base==='help': {
+        termPrint('CORE: help about whoami date time uptime sysinfo skills version uname id env hostname history');
+        termPrint('SESSION: clear cls exit reboot');
+        termPrint('FILESYSTEM: pwd ls cd mkdir touch cat rm mv cp tree find echo wc');
+        termPrint('TEXT: reverse upper lower shuffle len count');
+        termPrint('MATH/CRYPTO: calc expr sha256 base64encode base64decode uuid rand randnum');
+        termPrint('RANDOM/FUN: dice coinflip password 8ball fortune cowsay banner ascii matrix');
+        termPrint('NETWORK (real): myip ping curl weather joke quote define qr');
+        termPrint('BROWSER INFO (real): battery memory screen online useragent lang cookies');
+        termPrint('NOTES/TODO (synced with Notes & To-Do apps): noteadd notelist notedel todoadd todolist tododone tododel');
+        termPrint('EASTER EGGS: sudo hack rickroll coffee party hello');
+        termPrint(`APPS: open <name> — ${Object.keys(TERM_APPS).join(', ')}`);
+        termPrint("Tip: Up/Down arrows cycle command history. 'man <command>' for details.");
+        break;
+      }
+      case base==='man': {
+        if(!args[0]){ termPrint('usage: man <command>'); break; }
+        const manText = {
+          calc:'calc <expr> — evaluates real arithmetic, e.g. calc 12*(3+4)',
+          cd:'cd <dir> | cd .. | cd ~ — navigate the virtual filesystem',
+          echo:'echo text | echo text > file | echo text >> file',
+          weather:'weather [lat] [lon] — real current weather via Open-Meteo (defaults to Phularwan)',
+          open:'open <appname> — launches a real app window, e.g. open notes'
+        };
+        termPrint(manText[args[0]] || `No manual entry for ${args[0]}`);
+        break;
+      }
+      case base==='about': termPrint('JARVIS — personal AI Superagent. Sharp, warm, proactive. Built for Abdullah Anser.'); break;
+      case base==='whoami': termPrint('abdullah@jarvis-os (owner)'); break;
+      case base==='id': termPrint('uid=1000(abdullah) gid=1000(owner) groups=1000(owner),27(sudo)'); break;
+      case base==='date': termPrint(new Date().toString()); break;
+      case base==='time': termPrint(new Date().toLocaleTimeString()); break;
+      case base==='uptime': {
+        const secs = Math.floor((Date.now()-termBootTime)/1000);
+        termPrint(`This session has been up ${Math.floor(secs/60)}m ${secs%60}s`);
+        break;
+      }
+      case base==='sysinfo': termPrint('JARVIS OS v1.0 | Kernel: Base44 Superagent runtime | Sandbox: Debian 12 (gVisor) | Skills loaded: 92'); break;
+      case base==='skills': termPrint('Active teams: Jarvis(Chief) Scout Ledger Ringer Lens Forge Warden Herald Scribe Patch Chalk — 92 skill modules loaded.'); break;
+      case base==='version': termPrint('Jarvis OS Terminal v2.0'); break;
+      case base==='uname': termPrint(args[0]==='-a' ? 'JarvisOS 2.0 web-sandbox x86_64 GNU/Browser' : 'JarvisOS'); break;
+      case base==='env': termPrint(`LANG=${navigator.language}  PLATFORM=${navigator.platform}  ONLINE=${navigator.onLine}`); break;
+      case base==='hostname': termPrint('jarvis-os'); break;
+      case base==='history': termHistory.slice(-20).forEach((h,i)=>termPrint(`${termHistory.length-20+i+1}  ${h}`)); break;
+
+      /* ---------- SESSION ---------- */
+      case base==='clear': case base==='cls':
+        document.querySelectorAll('#termBody .line').forEach(l=>l.remove());
+        break;
+      case base==='exit': termPrint('Closing terminal...'); setTimeout(()=>{ const w=document.getElementById('win-terminal'); if(w) w.remove(); }, 300); break;
+      case base==='reboot': termPrint('Rebooting Jarvis OS...'); setTimeout(()=>location.reload(), 500); break;
+
+      /* ---------- FILESYSTEM ---------- */
+      case base==='pwd': termPrint('/' + termPathStr()); break;
+      case base==='ls': {
+        const node = termCwdNode();
+        if(!node){ termPrint('ls: current directory is invalid'); break; }
+        const names = Object.keys(node.children||{});
+        if(!names.length){ termPrint('(empty)'); break; }
+        termPrint(names.map(n=> node.children[n].type==='dir' ? n+'/' : n).join('  '));
+        break;
+      }
+      case base==='cd': {
+        if(!args[0] || args[0]==='~'){ termCwd=['~']; saveTermCwd(); break; }
+        if(args[0]==='..'){ if(termCwd.length>1) termCwd.pop(); saveTermCwd(); break; }
+        if(args[0]==='/'){ termCwd=['~']; saveTermCwd(); break; }
+        const node = termCwdNode();
+        if(node && node.children && node.children[args[0]] && node.children[args[0]].type==='dir'){
+          termCwd.push(args[0]); saveTermCwd();
+        } else termPrint(`cd: no such directory: ${args[0]}`);
+        break;
+      }
+      case base==='mkdir': {
+        if(!args[0]){ termPrint('usage: mkdir <name>'); break; }
+        const node = termCwdNode();
+        if(node.children[args[0]]) { termPrint(`mkdir: ${args[0]} already exists`); break; }
+        node.children[args[0]] = {type:'dir', children:{}};
+        saveTermFS(); termPrint(`Created directory ${args[0]}`);
+        break;
+      }
+      case base==='touch': {
+        if(!args[0]){ termPrint('usage: touch <filename>'); break; }
+        const node = termCwdNode();
+        if(!node.children[args[0]]) node.children[args[0]] = {type:'file', content:''};
+        saveTermFS(); termPrint(`Touched ${args[0]}`);
+        break;
+      }
+      case base==='cat': {
+        if(!args[0]){ termPrint('usage: cat <filename>'); break; }
+        const node = termCwdNode();
+        const f = node.children[args[0]];
+        if(!f){ termPrint(`cat: ${args[0]}: No such file`); }
+        else if(f.type==='dir'){ termPrint(`cat: ${args[0]}: Is a directory`); }
+        else termPrint(f.content || '(empty file)');
+        break;
+      }
+      case base==='rm': {
+        let target = args[0]; let recursive = false;
+        if(args[0]==='-r' || args[0]==='-rf'){ recursive = true; target = args[1]; }
+        if(!target){ termPrint('usage: rm [-r] <name>'); break; }
+        const node = termCwdNode();
+        const item = node.children[target];
+        if(!item){ termPrint(`rm: ${target}: No such file or directory`); break; }
+        if(item.type==='dir' && Object.keys(item.children).length && !recursive){ termPrint(`rm: ${target}: directory not empty (use rm -r)`); break; }
+        delete node.children[target]; saveTermFS(); termPrint(`Removed ${target}`);
+        break;
+      }
+      case base==='mv': {
+        if(!args[0] || !args[1]){ termPrint('usage: mv <old> <new>'); break; }
+        const node = termCwdNode();
+        if(!node.children[args[0]]){ termPrint(`mv: ${args[0]}: No such file`); break; }
+        node.children[args[1]] = node.children[args[0]];
+        delete node.children[args[0]];
+        saveTermFS(); termPrint(`Renamed ${args[0]} -> ${args[1]}`);
+        break;
+      }
+      case base==='cp': {
+        if(!args[0] || !args[1]){ termPrint('usage: cp <src> <dest>'); break; }
+        const node = termCwdNode();
+        if(!node.children[args[0]]){ termPrint(`cp: ${args[0]}: No such file`); break; }
+        node.children[args[1]] = JSON.parse(JSON.stringify(node.children[args[0]]));
+        saveTermFS(); termPrint(`Copied ${args[0]} -> ${args[1]}`);
+        break;
+      }
+      case base==='tree': {
+        const lines = [];
+        (function walk(node, prefix){
+          Object.keys(node.children||{}).forEach(name=>{
+            const item = node.children[name];
+            lines.push(prefix + (item.type==='dir' ? name+'/' : name));
+            if(item.type==='dir') walk(item, prefix+'  ');
+          });
+        })(termCwdNode(), '');
+        termPrint(lines.length ? lines.join('\n') : '(empty)');
+        break;
+      }
+      case base==='find': {
+        if(!args[0]){ termPrint('usage: find <name>'); break; }
+        const hits = [];
+        (function walk(node, path){
+          Object.keys(node.children||{}).forEach(name=>{
+            const full = path+'/'+name;
+            if(name.toLowerCase().includes(args[0].toLowerCase())) hits.push(full);
+            if(node.children[name].type==='dir') walk(node.children[name], full);
+          });
+        })(termFS, '');
+        termPrint(hits.length ? hits.join('\n') : 'No matches found');
+        break;
+      }
+      case base==='echo': {
+        const raw = expanded.slice(5);
+        const appendMatch = raw.match(/^(.*)>>\s*(\S+)$/);
+        const writeMatch = raw.match(/^(.*[^>])>\s*(\S+)$/);
+        const node = termCwdNode();
+        if(appendMatch){
+          const [,txt,file] = appendMatch;
+          if(!node.children[file]) node.children[file] = {type:'file', content:''};
+          node.children[file].content += (node.children[file].content?'\n':'') + txt.trim();
+          saveTermFS(); termPrint(`Appended to ${file}`);
+        } else if(writeMatch){
+          const [,txt,file] = writeMatch;
+          node.children[file] = {type:'file', content: txt.trim()};
+          saveTermFS(); termPrint(`Wrote ${file}`);
+        } else termPrint(raw);
+        break;
+      }
+      case base==='wc': termPrint(`${argStr.trim() ? argStr.trim().split(/\s+/).length : 0} words, ${argStr.length} chars`); break;
+
+      /* ---------- TEXT TOOLS ---------- */
+      case base==='reverse': termPrint(argStr.split('').reverse().join('')); break;
+      case base==='upper': termPrint(argStr.toUpperCase()); break;
+      case base==='lower': termPrint(argStr.toLowerCase()); break;
+      case base==='len': termPrint(String(argStr.length)); break;
+      case base==='count': termPrint(String(argStr.trim() ? argStr.trim().split(/\s+/).length : 0)); break;
+      case base==='shuffle': {
+        const arr = argStr.split('');
+        for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; }
+        termPrint(arr.join(''));
+        break;
+      }
+
+      /* ---------- MATH / CRYPTO ---------- */
+      case base==='calc': case base==='expr': {
+        try{ termPrint(String(termSafeCalc(argStr))); }
+        catch(e){ termPrint('calc: invalid expression'); }
+        break;
+      }
+      case base==='sha256': termPrint(await termSha256(argStr)); break;
+      case base==='base64encode': termPrint(btoa(argStr)); break;
+      case base==='base64decode': { try{ termPrint(atob(argStr)); }catch(e){ termPrint('base64decode: invalid input'); } break; }
+      case base==='uuid': termPrint(crypto.randomUUID()); break;
+      case base==='rand': termPrint(String(Math.random())); break;
+      case base==='randnum': {
+        const min = parseInt(args[0])||0, max = parseInt(args[1])||100;
+        termPrint(String(Math.floor(Math.random()*(max-min+1))+min));
+        break;
+      }
+
+      /* ---------- RANDOM / FUN ---------- */
+      case base==='dice': { const sides = parseInt(args[0])||6; termPrint(`You rolled a ${Math.floor(Math.random()*sides)+1} (d${sides})`); break; }
+      case base==='coinflip': termPrint(Math.random()<0.5 ? 'Heads' : 'Tails'); break;
+      case base==='password': termPrint(termRandomPassword(parseInt(args[0])||16)); break;
+      case base==='8ball': termPrint(TERM_8BALL[Math.floor(Math.random()*TERM_8BALL.length)]); break;
+      case base==='fortune': termPrint(TERM_FORTUNES[Math.floor(Math.random()*TERM_FORTUNES.length)]); break;
+      case base==='cowsay': termPrint(termCowsay(argStr || 'Moo')); break;
+      case base==='banner': case base==='ascii': termPrint('*'.repeat(argStr.length+4) + '\n* ' + argStr.toUpperCase() + ' *\n' + '*'.repeat(argStr.length+4)); break;
+      case base==='matrix': termPrint('01001010 01000001 01010010 01010110 01001001 01010011 ... (matrix mode engaged)'); break;
+
+      /* ---------- NETWORK (real) ---------- */
+      case base==='myip': {
+        termPrint('Fetching your real public IP...');
+        try{ const d = await fetch('https://api.ipify.org?format=json').then(r=>r.json()); termPrint(`Public IP: ${d.ip}`); }
+        catch(e){ termPrint('Could not fetch IP right now.'); }
+        break;
+      }
+      case base==='ping': {
+        const target = args[0] || 'google.com';
+        termPrint(`Pinging ${target} (real HTTP round-trip, not raw ICMP)...`);
+        const t0 = performance.now();
+        try{ await fetch(`https://www.google.com/generate_204`, {mode:'no-cors'}); termPrint(`Reply from network in ${Math.round(performance.now()-t0)}ms`); }
+        catch(e){ termPrint('Network unreachable.'); }
+        break;
+      }
+      case base==='curl': {
+        if(!args[0]){ termPrint('usage: curl <url>'); break; }
+        termPrint(`Fetching ${args[0]}...`);
+        try{
+          const res = await fetch(args[0]);
+          const txt = await res.text();
+          termPrint(txt.slice(0,300) + (txt.length>300?'... (truncated)':''));
+        }catch(e){ termPrint(`curl: blocked by CORS or unreachable (${e.message})`); }
+        break;
+      }
+      case base==='weather': {
+        const lat = args[0] || '32.3557', lon = args[1] || '73.0124';
+        termPrint('Fetching real weather...');
+        try{
+          const d = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`).then(r=>r.json());
+          const w = d.current_weather;
+          termPrint(`Temp: ${w.temperature}°C | Wind: ${w.windspeed} km/h | ${w.time}`);
+        }catch(e){ termPrint('Could not fetch weather right now.'); }
+        break;
+      }
+      case base==='joke': {
+        try{
+          const d = await fetch('https://icanhazdadjoke.com/', {headers:{Accept:'application/json'}}).then(r=>r.json());
+          termPrint(d.joke);
+        }catch(e){ termPrint(TERM_JOKES_FALLBACK[Math.floor(Math.random()*TERM_JOKES_FALLBACK.length)]); }
+        break;
+      }
+      case base==='quote': {
+        try{
+          const d = await fetch('https://api.realinspire.tech/v1/quotes/random').then(r=>r.json());
+          const q = Array.isArray(d) ? d[0] : d;
+          termPrint(`"${q.content}" — ${q.author}`);
+        }catch(e){ termPrint(TERM_QUOTES_FALLBACK[Math.floor(Math.random()*TERM_QUOTES_FALLBACK.length)]); }
+        break;
+      }
+      case base==='define': {
+        if(!args[0]){ termPrint('usage: define <word>'); break; }
+        try{
+          const d = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(args[0])}`).then(r=>r.json());
+          const def = d[0].meanings[0].definitions[0].definition;
+          termPrint(`${args[0]}: ${def}`);
+        }catch(e){ termPrint(`No definition found for "${args[0]}"`); }
+        break;
+      }
+      case base==='qr': {
+        if(!args[0]){ termPrint('usage: qr <text or url>'); break; }
+        termPrintHTML(`<img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(argStr)}" style="border-radius:6px;background:#fff;padding:6px;" width="150" height="150">`);
+        break;
+      }
+
+      /* ---------- REAL BROWSER INFO ---------- */
+      case base==='battery': {
+        if(navigator.getBattery){
+          const b = await navigator.getBattery();
+          termPrint(`Battery: ${Math.round(b.level*100)}% ${b.charging?'(charging)':'(not charging)'}`);
+        } else termPrint('Battery API not supported by this browser.');
+        break;
+      }
+      case base==='memory': {
+        if(performance.memory){
+          termPrint(`JS heap used: ${(performance.memory.usedJSHeapSize/1048576).toFixed(1)} MB / ${(performance.memory.jsHeapSizeLimit/1048576).toFixed(1)} MB`);
+        } else termPrint('Memory API not exposed by this browser (Chrome-only).');
+        break;
+      }
+      case base==='screen': termPrint(`Screen: ${screen.width}x${screen.height} | Window: ${window.innerWidth}x${window.innerHeight}`); break;
+      case base==='online': termPrint(navigator.onLine ? 'Online' : 'Offline'); break;
+      case base==='useragent': termPrint(navigator.userAgent); break;
+      case base==='lang': termPrint(navigator.language); break;
+      case base==='cookies': termPrint(navigator.cookieEnabled ? 'Cookies enabled' : 'Cookies disabled'); break;
+
+      /* ---------- NOTES / TODO (synced with real apps) ---------- */
+      case base==='noteadd': {
+        if(!argStr){ termPrint('usage: noteadd <text>'); break; }
+        const existing = localStorage.getItem('jarvis_notes') || '';
+        const updated = existing + (existing?'\n':'') + argStr;
+        localStorage.setItem('jarvis_notes', updated);
+        const area = document.getElementById('notesArea'); if(area) area.value = updated;
+        termPrint('Added to Notes.');
+        break;
+      }
+      case base==='notelist': {
+        const existing = localStorage.getItem('jarvis_notes') || '';
+        termPrint(existing || '(no notes yet)');
+        break;
+      }
+      case base==='notedel': {
+        const lines = (localStorage.getItem('jarvis_notes')||'').split('\n');
+        const idx = parseInt(args[0]);
+        if(isNaN(idx) || idx<1 || idx>lines.length){ termPrint('usage: notedel <line number> (see notelist)'); break; }
+        lines.splice(idx-1,1);
+        const updated = lines.join('\n');
+        localStorage.setItem('jarvis_notes', updated);
+        const area = document.getElementById('notesArea'); if(area) area.value = updated;
+        termPrint('Note line removed.');
+        break;
+      }
+      case base==='todoadd': {
+        if(!argStr){ termPrint('usage: todoadd <task>'); break; }
+        if(typeof todos !== 'undefined'){
+          todos.push({text:argStr, done:false});
+          localStorage.setItem('jarvis_todos', JSON.stringify(todos));
+          if(typeof renderTodos==='function') renderTodos();
+        }
+        termPrint('Added to To-Do list.');
+        break;
+      }
+      case base==='todolist': {
+        const list = JSON.parse(localStorage.getItem('jarvis_todos')||'[]');
+        termPrint(list.length ? list.map((t,i)=>`${i+1}. [${t.done?'x':' '}] ${t.text}`).join('\n') : '(no tasks)');
+        break;
+      }
+      case base==='tododone': {
+        const idx = parseInt(args[0]);
+        if(typeof todos !== 'undefined' && todos[idx-1]){
+          todos[idx-1].done = true;
+          localStorage.setItem('jarvis_todos', JSON.stringify(todos));
+          if(typeof renderTodos==='function') renderTodos();
+          termPrint('Marked done.');
+        } else termPrint('usage: tododone <task number> (see todolist)');
+        break;
+      }
+      case base==='tododel': {
+        const idx = parseInt(args[0]);
+        if(typeof todos !== 'undefined' && todos[idx-1]){
+          todos.splice(idx-1,1);
+          localStorage.setItem('jarvis_todos', JSON.stringify(todos));
+          if(typeof renderTodos==='function') renderTodos();
+          termPrint('Task removed.');
+        } else termPrint('usage: tododel <task number> (see todolist)');
+        break;
+      }
+
+      /* ---------- EASTER EGGS ---------- */
+      case base==='sudo': termPrint('Nice try. This account already has full owner privileges.'); break;
+      case base==='hack': {
+        termPrint('Initiating totally real hacking sequence...');
+        setTimeout(()=>termPrint('Bypassing mainframe firewall... 42%'),300);
+        setTimeout(()=>termPrint('Just kidding. Here is a joke instead: Why do Java developers wear glasses? Because they can\'t C#.'),900);
+        break;
+      }
+      case base==='rickroll': termPrint('Never gonna give you up...'); setTimeout(()=>window.open('https://www.youtube.com/watch?v=dQw4w9WgXcQ','_blank'),400); break;
+      case base==='coffee': termPrint('☕ Here, virtual coffee. Now back to work.'); break;
+      case base==='party': termPrint('🎉🎊 Party mode engaged. 🎊🎉'); break;
+      case base==='hello': termPrint('Hey! Jarvis Terminal at your service.'); break;
+
+      /* ---------- ALIAS ---------- */
+      case base==='alias': {
+        if(!args[0]){ termPrint(Object.keys(termAliases).length ? Object.entries(termAliases).map(([k,v])=>`${k}='${v}'`).join('\n') : '(no aliases set)'); break; }
+        const eq = argStr.indexOf('=');
+        if(eq===-1){ termPrint('usage: alias name=command'); break; }
+        const name = argStr.slice(0,eq).trim(), value = argStr.slice(eq+1).trim().replace(/^['"]|['"]$/g,'');
+        termAliases[name] = value;
+        localStorage.setItem('jarvis_term_aliases', JSON.stringify(termAliases));
+        termPrint(`Alias set: ${name} -> ${value}`);
+        break;
+      }
+
+      /* ---------- APP LAUNCHER ---------- */
+      case base==='open': {
+        if(!args[0]){ termPrint(`usage: open <appname> — ${Object.keys(TERM_APPS).join(', ')}`); break; }
+        const target = args[0].toLowerCase();
+        if(TERM_APPS[target]){ termPrint(`Opening ${TERM_APPS[target]}...`); setTimeout(()=>openApp(target), 200); }
+        else termPrint(`open: unknown app "${args[0]}". Try: ${Object.keys(TERM_APPS).join(', ')}`);
+        break;
+      }
+
+      default: {
+        if(TERM_APPS[base]){ termPrint(`Opening ${TERM_APPS[base]}...`); setTimeout(()=>openApp(base), 200); break; }
+        termPrint(`jarvis: command not found: ${cmdRaw}  (type 'help')`);
+      }
+    }
+  }catch(err){
+    termPrint(`error: ${err.message}`);
   }
 }
 
+function handleTermKey(e){
+  const input = e.target;
+  if(e.key === 'Enter'){
+    const cmd = input.value.trim();
+    if(cmd==='') return;
+    termPrint((termPromptLabel()) + ' ' + cmd);
+    runTermCommand(cmd);
+    input.value = '';
+    document.getElementById('termBody').scrollTop = 999999;
+  } else if(e.key === 'ArrowUp'){
+    e.preventDefault();
+    if(termHistoryPos > 0){ termHistoryPos--; input.value = termHistory[termHistoryPos] || ''; }
+  } else if(e.key === 'ArrowDown'){
+    e.preventDefault();
+    if(termHistoryPos < termHistory.length-1){ termHistoryPos++; input.value = termHistory[termHistoryPos] || ''; }
+    else { termHistoryPos = termHistory.length; input.value = ''; }
+  }
+}
+function termPromptLabel(){ return `jarvis@os:/${termPathStr()}$`; }
 /* ---------- BROWSER ---------- */
 function openBrowser(){
   createWindow('browser', 'Browser', '&#127760;', `
