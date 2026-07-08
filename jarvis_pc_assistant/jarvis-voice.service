@@ -1,0 +1,26 @@
+# Linux autostart (systemd user service).
+# Install with:
+#   mkdir -p ~/.config/systemd/user
+#   cp jarvis-voice.service ~/.config/systemd/user/
+#   (edit the two %h/... paths below if you installed somewhere other than your home folder)
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now jarvis-voice.service
+#   loginctl enable-linger $USER   # so it keeps running after you log out of the GUI
+#
+# Check status / logs with:
+#   systemctl --user status jarvis-voice.service
+#   journalctl --user -u jarvis-voice.service -f
+
+[Unit]
+Description=Jarvis PC Voice Assistant
+After=network-online.target sound.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/jarvis_pc_assistant
+ExecStart=%h/jarvis_pc_assistant/venv/bin/python %h/jarvis_pc_assistant/jarvis_pc_assistant.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
