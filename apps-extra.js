@@ -33,6 +33,13 @@ const STORE_APPS = [
   {id:'qrcode', glyph:'&#9723;', name:'QR Code', tag:''},
   {id:'sysinfo', glyph:'&#128187;', name:'System Info', tag:''},
   {id:'stopwatch', glyph:'&#9201;', name:'Stopwatch', tag:''},
+  {id:'mail', glyph:'&#9993;', name:'Mail', tag:'New'},
+  {id:'calendar', glyph:'&#128197;', name:'Calendar', tag:'New'},
+  {id:'music', glyph:'&#127925;', name:'Music', tag:'New'},
+  {id:'photos', glyph:'&#128247;', name:'Photos', tag:'New'},
+  {id:'cloud', glyph:'&#9729;', name:'Cloud', tag:'New'},
+  {id:'maps', glyph:'&#128506;', name:'Maps', tag:'New'},
+  {id:'news', glyph:'&#128240;', name:'News', tag:'New'},
 ];
 
 function openStore(){
@@ -671,3 +678,203 @@ function setBar(id, pct){ const el = document.getElementById(id); if(el) el.styl
 
 try { initHud(); } catch(err){ const el=document.getElementById('greetSub'); if(el) el.textContent='initHud threw: '+err.message; }
 window.addEventListener('load', () => { setTimeout(() => { try { initHud(); } catch(err){ const el=document.getElementById('greetSub'); if(el) el.textContent='initHud(load) threw: '+err.message; } }, 500); });
+
+/* ================= NEW APPS: Mail, Calendar, Music, Photos, Cloud, Maps, News ================= */
+
+/* ---------------- MAIL (local demo inbox — honest: not OAuth-connected on a static page) ---------------- */
+const DEMO_INBOX = [
+  {from:'Base44 Team', subj:'Welcome to Jarvis OS', body:'Your desktop environment is live. Explore the Store for more apps.', time:'09:02 AM', unread:true},
+  {from:'GitHub', subj:'PR review reminder', body:'You have pull requests waiting for review.', time:'08:41 AM', unread:true},
+  {from:'Calendar', subj:'Meeting in 1 hour', body:'Daily sync at 10:00 AM.', time:'Yesterday', unread:false},
+  {from:'Jarvis', subj:'Morning Briefing Ready', body:'Your Gmail + Calendar + GitHub summary is ready.', time:'Yesterday', unread:false},
+];
+function openMail(){
+  const list = DEMO_INBOX.map((m,i)=>`
+    <div class="mail-row ${m.unread?'unread':''}" onclick="readMail(${i})">
+      <div class="mail-from">${m.from}</div>
+      <div class="mail-subj">${m.subj}</div>
+      <div class="mail-time">${m.time}</div>
+    </div>`).join('');
+  createWindow('mail', 'Mail', '&#9993;', `
+    <div class="panel" style="padding-bottom:0;">
+      <h3>INBOX</h3>
+      <p style="color:var(--text-dim); font-size:11.5px; margin-top:-8px;">Local demo inbox — not wired to a real mailbox on this public page. For real email, use Jarvis chat on WhatsApp.</p>
+    </div>
+    <div id="mailList" style="overflow:auto; max-height:340px;">${list}</div>
+    <div id="mailReader" style="display:none; padding:14px;"></div>
+  `, {width:480, height:440});
+}
+function readMail(i){
+  const m = DEMO_INBOX[i];
+  m.unread = false;
+  document.getElementById('mailList').style.display = 'none';
+  const r = document.getElementById('mailReader');
+  r.style.display = 'block';
+  r.innerHTML = `
+    <div style="cursor:pointer; color:var(--accent); font-size:12px; margin-bottom:10px;" onclick="closeMailReader()">&larr; Back to inbox</div>
+    <h3 style="margin-bottom:4px;">${m.subj}</h3>
+    <div style="color:var(--text-dim); font-size:11px; margin-bottom:12px;">From: ${m.from} · ${m.time}</div>
+    <div style="font-size:13px; line-height:1.6;">${m.body}</div>`;
+}
+function closeMailReader(){
+  document.getElementById('mailReader').style.display = 'none';
+  document.getElementById('mailList').style.display = 'block';
+  openApp('__refresh_mail__');
+}
+
+/* ---------------- CALENDAR (real, functional month view) ---------------- */
+let calCursor = new Date();
+function openCalendar(){
+  createWindow('calendar', 'Calendar', '&#128197;', `<div class="panel" id="calBody"></div>`, {width:400, height:440});
+  renderCalendar();
+}
+function renderCalendar(){
+  const body = document.getElementById('calBody');
+  if(!body) return;
+  const year = calCursor.getFullYear(), month = calCursor.getMonth();
+  const first = new Date(year, month, 1);
+  const startDay = first.getDay();
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const today = new Date();
+  const monthName = calCursor.toLocaleString('en-US', {month:'long'});
+  let cells = '';
+  for(let i=0;i<startDay;i++) cells += `<div class="cal-cell empty"></div>`;
+  for(let d=1; d<=daysInMonth; d++){
+    const isToday = d===today.getDate() && month===today.getMonth() && year===today.getFullYear();
+    cells += `<div class="cal-cell ${isToday?'today':''}">${d}</div>`;
+  }
+  body.innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <span class="btn" style="padding:4px 10px;" onclick="calNav(-1)">&lsaquo;</span>
+      <h3 style="margin:0;">${monthName} ${year}</h3>
+      <span class="btn" style="padding:4px 10px;" onclick="calNav(1)">&rsaquo;</span>
+    </div>
+    <div class="cal-grid">
+      ${['Su','Mo','Tu','We','Th','Fr','Sa'].map(d=>`<div class="cal-dow">${d}</div>`).join('')}
+      ${cells}
+    </div>`;
+}
+function calNav(dir){ calCursor.setMonth(calCursor.getMonth()+dir); renderCalendar(); }
+
+/* ---------------- MUSIC (real Web Audio API synth player) ---------------- */
+let musicCtx = null, musicOsc = null, musicPlaying = false;
+const MUSIC_TRACKS = [
+  {name:'Arc Reactor Hum', freq:110, type:'sine'},
+  {name:'HUD Pulse', freq:220, type:'triangle'},
+  {name:'Repulsor Charge', freq:330, type:'sawtooth'},
+];
+function openMusic(){
+  const rows = MUSIC_TRACKS.map((t,i)=>`
+    <div class="mail-row" onclick="playTrack(${i})"><div class="mail-from">&#9835;</div><div class="mail-subj">${t.name}</div><div class="mail-time">${t.freq}Hz</div></div>`).join('');
+  createWindow('music', 'Music', '&#127925;', `
+    <div class="panel">
+      <h3>JARVIS AUDIO ENGINE</h3>
+      <p style="color:var(--text-dim); font-size:11.5px; margin-top:-8px;">Real Web Audio API synth — genuinely generates sound in your browser, no files needed.</p>
+      <div id="nowPlaying" style="text-align:center; padding:16px 0; color:var(--accent); font-size:13px;">Nothing playing</div>
+      <div style="text-align:center; margin-bottom:14px;">
+        <span class="btn" onclick="stopTrack()">&#9724; Stop</span>
+      </div>
+      ${rows}
+      <div class="row" style="margin-top:14px;"><span style="width:60px; font-size:12px; color:var(--text-dim);">Volume</span><input type="range" min="0" max="1" step="0.05" value="0.15" id="musicVol" style="flex:1" oninput="setMusicVol(this.value)"></div>
+    </div>
+  `, {width:420, height:420});
+}
+function playTrack(i){
+  stopTrack();
+  const t = MUSIC_TRACKS[i];
+  musicCtx = musicCtx || new (window.AudioContext || window.webkitAudioContext)();
+  musicOsc = musicCtx.createOscillator();
+  const gain = musicCtx.createGain();
+  gain.gain.value = parseFloat(document.getElementById('musicVol')?.value || 0.15);
+  musicOsc.type = t.type; musicOsc.frequency.value = t.freq;
+  musicOsc.connect(gain); gain.connect(musicCtx.destination);
+  musicOsc.start();
+  musicOsc._gain = gain;
+  musicPlaying = true;
+  const np = document.getElementById('nowPlaying'); if(np) np.textContent = '&#9835; Playing: ' + t.name;
+}
+function stopTrack(){
+  if(musicOsc){ try{ musicOsc.stop(); }catch(e){} musicOsc = null; }
+  musicPlaying = false;
+  const np = document.getElementById('nowPlaying'); if(np) np.textContent = 'Nothing playing';
+}
+function setMusicVol(v){ if(musicOsc && musicOsc._gain) musicOsc._gain.gain.value = parseFloat(v); }
+
+/* ---------------- PHOTOS (procedural CSS/canvas gallery — no external assets needed) ---------------- */
+const PHOTO_SEEDS = [
+  {name:'Arc Core', c1:'#00d9ff', c2:'#001a2e'},
+  {name:'HUD Grid', c1:'#7cf9ff', c2:'#0a1f33'},
+  {name:'Repulsor', c1:'#ffffff', c2:'#00819e'},
+  {name:'Night Sky', c1:'#0d3b66', c2:'#000814'},
+  {name:'Circuit', c1:'#00ffcc', c2:'#031b1b'},
+  {name:'Stark Blue', c1:'#3ac0ff', c2:'#001b33'},
+];
+function openPhotos(){
+  const tiles = PHOTO_SEEDS.map((p,i)=>`
+    <div class="photo-tile" style="background:radial-gradient(circle at 30% 30%, ${p.c1}, ${p.c2});" onclick="viewPhoto(${i})"></div>`).join('');
+  createWindow('photos', 'Photos', '&#128247;', `
+    <div class="panel" style="padding-bottom:0;"><h3>GALLERY</h3></div>
+    <div class="photo-grid">${tiles}</div>
+    <div id="photoView" style="display:none;"></div>
+  `, {width:480, height:420});
+}
+function viewPhoto(i){
+  const p = PHOTO_SEEDS[i];
+  const w = document.getElementById('body-photos');
+  w.innerHTML = `
+    <div style="padding:14px;">
+      <div style="cursor:pointer; color:var(--accent); font-size:12px; margin-bottom:10px;" onclick="openPhotos()">&larr; Back to gallery</div>
+      <div style="height:260px; border-radius:10px; background:radial-gradient(circle at 30% 30%, ${p.c1}, ${p.c2});"></div>
+      <div style="margin-top:10px; font-size:13px;">${p.name}</div>
+    </div>`;
+}
+
+/* ---------------- CLOUD (real local-storage usage stats — honest, no fake cloud data) ---------------- */
+function openCloud(){
+  let used = 0;
+  try{ for(const k in localStorage){ if(localStorage.hasOwnProperty(k)) used += (localStorage[k].length + k.length); } }catch(e){}
+  const usedKb = (used/1024).toFixed(2);
+  createWindow('cloud', 'Cloud', '&#9729;', `
+    <div class="panel">
+      <h3>LOCAL STORAGE</h3>
+      <p style="color:var(--text-dim); font-size:11.5px; margin-top:-8px;">This shows real browser localStorage usage on this device — genuine data, not a live Drive/iCloud connection.</p>
+      <div class="stat-row" style="margin-top:16px;">
+        <div class="stat-label"><span>Used</span><span>${usedKb} KB</span></div>
+        <div class="stat-bar"><div class="fill" style="width:${Math.min(100, used/50000*100)}%"></div></div>
+      </div>
+      <p style="color:var(--text-dim); font-size:11.5px; margin-top:16px;">To sync real files, connect Google Drive through Jarvis chat.</p>
+    </div>
+  `, {width:380, height:280});
+}
+
+/* ---------------- MAPS (real OpenStreetMap embed, centered on Phularwan) ---------------- */
+function openMaps(){
+  createWindow('maps', 'Maps', '&#128506;', `
+    <div style="padding:10px;">
+      <div style="font-size:12px; color:var(--text-dim); margin-bottom:8px;">Phularwan, Sargodha, Punjab, Pakistan — live OpenStreetMap</div>
+      <iframe width="100%" height="330" style="border:1px solid rgba(0,217,255,0.25); border-radius:8px;"
+        src="https://www.openstreetmap.org/export/embed.html?bbox=72.9924%2C32.3357%2C73.0324%2C32.3757&layer=mapnik&marker=32.3557%2C73.0124"></iframe>
+    </div>
+  `, {width:480, height:420});
+}
+
+/* ---------------- NEWS (real fetch from Hacker News public API, CORS-open, no key) ---------------- */
+function openNews(){
+  createWindow('news', 'News', '&#128240;', `
+    <div class="panel" style="padding-bottom:0;"><h3>TOP HEADLINES</h3></div>
+    <div id="newsList" style="padding:0 14px 14px; overflow:auto; max-height:360px;">Loading real headlines…</div>
+  `, {width:460, height:440});
+  fetch('https://hacker-news.firebaseio.com/v0/topstories.json')
+    .then(r=>r.json())
+    .then(ids=>Promise.all(ids.slice(0,10).map(id=>fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`).then(r=>r.json()))))
+    .then(items=>{
+      const el = document.getElementById('newsList');
+      if(!el) return;
+      el.innerHTML = items.map(it=>`
+        <div style="padding:9px 0; border-top:1px solid rgba(255,255,255,0.06); font-size:12.5px;">
+          <a href="${it.url||'#'}" target="_blank" style="color:var(--text-main); text-decoration:none;">${it.title}</a>
+          <div style="color:var(--text-dim); font-size:10.5px; margin-top:2px;">${it.score||0} pts · ${it.by||''}</div>
+        </div>`).join('');
+    })
+    .catch(()=>{ const el = document.getElementById('newsList'); if(el) el.textContent = 'Could not reach the news API right now.'; });
+}
