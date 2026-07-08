@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>JARVIS OS</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#05090f">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Jarvis">
 <style>
   :root{
     --bg-deep:#070a12;
@@ -300,6 +308,49 @@
   .neon-icon-sm{ display:inline-flex; vertical-align:middle; width:16px; height:16px; margin-right:2px; }
   .icon .glyph svg, .pin-icon svg, .store-item .glyph svg{ width:60%; height:60%; }
   .pin-icon svg{ width:55%; height:55%; }
+
+  /* ---------- lock / login screen (Windows/Linux-style gate) ---------- */
+  #lockScreen{
+    position:fixed; inset:0; z-index:900; display:none; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+    background:radial-gradient(circle at 50% 30%, rgba(0,60,80,0.35), rgba(4,8,14,0.98) 70%), #05090f;
+    backdrop-filter:blur(6px);
+  }
+  #lockScreen.active{ display:flex; }
+  .lock-time{ font-size:64px; font-weight:200; color:#fff; letter-spacing:2px; text-shadow:0 0 20px rgba(0,217,255,0.5); }
+  .lock-date{ font-size:15px; color:var(--text-dim); margin-bottom:22px; }
+  .lock-avatar{
+    width:84px; height:84px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(145deg, rgba(0,217,255,0.3), rgba(0,60,80,0.2)); border:1px solid var(--border-glow);
+    box-shadow:0 0 26px rgba(0,217,255,0.35); font-size:26px; color:var(--accent); font-weight:600; margin-bottom:10px;
+  }
+  .lock-name{ font-size:16px; color:#fff; font-weight:600; }
+  .lock-sub{ font-size:12px; color:var(--text-dim); margin-bottom:22px; }
+  .lock-form{ display:flex; gap:8px; }
+  .lock-input{
+    width:220px; padding:12px 16px; border-radius:24px; border:1px solid rgba(0,217,255,0.3);
+    background:rgba(255,255,255,0.05); color:#fff; font-size:14px; text-align:center; letter-spacing:4px;
+  }
+  .lock-input:focus{ outline:none; border-color:var(--accent); box-shadow:0 0 12px rgba(0,217,255,0.4); }
+  .lock-btn{
+    width:44px; height:44px; border-radius:50%; border:1px solid var(--border-glow); background:rgba(0,217,255,0.12);
+    color:var(--accent); font-size:16px; cursor:pointer;
+  }
+  .lock-btn:hover{ background:rgba(0,217,255,0.25); }
+  .lock-error{ color:#ff6b6b; font-size:12px; margin-top:10px; height:14px; }
+  .lock-hint{ color:var(--text-dim); font-size:10.5px; margin-top:18px; opacity:0.7; }
+  .lock-shake{ animation:lockshake .4s; }
+  @keyframes lockshake{ 0%,100%{transform:translateX(0);} 25%{transform:translateX(-8px);} 75%{transform:translateX(8px);} }
+
+  /* ---------- Jarvis voice orb ---------- */
+  .jarvis-orb-lg{ position:relative; width:90px; height:90px; display:flex; align-items:center; justify-content:center; }
+  .jarvis-orb-lg .orb-core{ width:26px; height:26px; border-radius:50%; background:var(--accent); box-shadow:0 0 20px rgba(0,217,255,0.9); }
+  .jarvis-orb-lg .orb-ring{ position:absolute; inset:0; border-radius:50%; border:2px solid rgba(0,217,255,0.25); }
+  .jarvis-orb-lg.orb-idle .orb-core{ opacity:0.5; }
+  .jarvis-orb-lg.orb-wake-idle .orb-ring{ border-color:rgba(0,217,255,0.5); animation:orbPulse 2.4s ease-in-out infinite; }
+  .jarvis-orb-lg.orb-listening .orb-ring, .jarvis-orb-lg.orb-active .orb-ring{ border-color:var(--accent); animation:orbPulse 0.9s ease-in-out infinite; }
+  .jarvis-orb-lg.orb-speaking .orb-core{ animation:orbSpeak 0.5s ease-in-out infinite alternate; }
+  @keyframes orbPulse{ 0%{ transform:scale(1); opacity:0.6; } 50%{ transform:scale(1.25); opacity:1; } 100%{ transform:scale(1); opacity:0.6; } }
+  @keyframes orbSpeak{ 0%{ transform:scale(1); } 100%{ transform:scale(1.3); } }
 </style>
 </head>
 <body>
@@ -310,6 +361,20 @@
   <div class="tagline">PERSONAL AI OPERATING SYSTEM</div>
   <div class="bootbar"><div class="bootbar-fill" id="bootFill"></div></div>
   <div class="bootlog" id="bootLog">Initializing core...</div>
+</div>
+
+<div id="lockScreen">
+  <div class="lock-time" id="lockTime">--:--</div>
+  <div class="lock-date" id="lockDate">--</div>
+  <div class="lock-avatar">AA</div>
+  <div class="lock-name">Abdullah Anser</div>
+  <div class="lock-sub">Jarvis OS &middot; Locked</div>
+  <div class="lock-form">
+    <input type="password" id="lockPin" class="lock-input" placeholder="Enter PIN" maxlength="8" autocomplete="off">
+    <button class="lock-btn" onclick="tryUnlock()">&#8594;</button>
+  </div>
+  <div class="lock-error" id="lockError"></div>
+  <div class="lock-hint">Default PIN: 1010 &middot; change it in Settings</div>
 </div>
 
 <div id="desktop">
@@ -349,6 +414,8 @@
     <div class="icon" onclick="openApp('voice')"><div class="glyph"><svg class="neon-svg" viewBox="0 0 24 24" style="width:60%;height:60%;"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></div><div class="label">Voice Assistant</div></div>
     <div class="icon" onclick="openApp('screenshot')"><div class="glyph"><svg class="neon-svg" viewBox="0 0 24 24" style="width:60%;height:60%;"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg></div><div class="label">Screenshot</div></div>
     <div class="icon" onclick="openApp('bluetooth')"><div class="glyph"><svg class="neon-svg" viewBox="0 0 24 24" style="width:60%;height:60%;"><path d="M8 7l8 6-4 3.5V4.5l4 3.5-8 6"/></svg></div><div class="label">Bluetooth</div></div>
+    <div class="icon" onclick="openApp('youtube')"><div class="glyph"><svg class="neon-svg" viewBox="0 0 24 24" style="width:60%;height:60%;"><rect x="2" y="6" width="20" height="12" rx="4"/><path d="M10 9.5l6 2.5-6 2.5z"/></svg></div><div class="label">YouTube</div></div>
+    <div class="icon" onclick="openApp('playstore')"><div class="glyph"><svg class="neon-svg" viewBox="0 0 24 24" style="width:60%;height:60%;"><path d="M6 8h12l-1 12H7L6 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></div><div class="label">Play Store</div></div>
   </div>
 </div>
 
@@ -363,6 +430,12 @@
   <div class="sm-item" onclick="openApp('voice'); toggleStart()"><div class="sm-glyph">&#127908;</div>Voice Assistant</div>
   <div class="sm-item" onclick="openApp('screenshot'); toggleStart()"><div class="sm-glyph">&#128247;</div>Screenshot</div>
   <div class="sm-item" onclick="openApp('bluetooth'); toggleStart()"><div class="sm-glyph">&#128367;</div>Bluetooth</div>
+  <div class="sm-item" onclick="openApp('youtube'); toggleStart()"><div class="sm-glyph">&#9654;</div>YouTube</div>
+  <div class="sm-item" onclick="openApp('facebook'); toggleStart()"><div class="sm-glyph">&#128075;</div>Facebook</div>
+  <div class="sm-item" onclick="openApp('instagram'); toggleStart()"><div class="sm-glyph">&#128248;</div>Instagram</div>
+  <div class="sm-item" onclick="openApp('tiktok'); toggleStart()"><div class="sm-glyph">&#127925;</div>TikTok</div>
+  <div class="sm-item" onclick="openApp('playstore'); toggleStart()"><div class="sm-glyph">&#128230;</div>Play Store</div>
+  <div class="sm-item" onclick="lockNow(); toggleStart()"><div class="sm-glyph">&#128274;</div>Lock Screen</div>
 </div>
 
 <div id="taskbar">
@@ -407,11 +480,68 @@ const bootInterval = setInterval(()=>{
       document.getElementById('boot').style.opacity = '0';
       setTimeout(()=>{
         document.getElementById('boot').style.display='none';
-        document.getElementById('desktop').classList.add('active');
+        document.getElementById('lockScreen').classList.add('active');
+        updateLockClock();
+        const pinField = document.getElementById('lockPin');
+        if(pinField) pinField.focus();
       }, 800);
     }, 500);
   }
 }, 420);
+
+/* ================= LOCK / LOGIN SCREEN ================= */
+function updateLockClock(){
+  const d = new Date();
+  const lt = document.getElementById('lockTime');
+  const ld = document.getElementById('lockDate');
+  if(lt) lt.textContent = d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  if(ld) ld.textContent = d.toLocaleDateString([], {weekday:'long', month:'long', day:'numeric'});
+}
+setInterval(updateLockClock, 1000*15);
+
+function getStoredPin(){ return localStorage.getItem('jarvisPin') || '1010'; }
+function tryUnlock(){
+  const field = document.getElementById('lockPin');
+  const err = document.getElementById('lockError');
+  const lock = document.getElementById('lockScreen');
+  if(field.value === getStoredPin()){
+    err.textContent = '';
+    lock.style.opacity = '0';
+    setTimeout(()=>{
+      lock.classList.remove('active');
+      lock.style.opacity = '1';
+      document.getElementById('desktop').classList.add('active');
+      field.value = '';
+    }, 400);
+  } else {
+    err.textContent = 'Incorrect PIN. Try again.';
+    lock.classList.add('lock-shake');
+    setTimeout(()=>lock.classList.remove('lock-shake'), 400);
+    field.value = '';
+    field.focus();
+  }
+}
+document.addEventListener('DOMContentLoaded', ()=>{
+  const field = document.getElementById('lockPin');
+  if(field) field.addEventListener('keydown', (e)=>{ if(e.key==='Enter') tryUnlock(); });
+});
+function changePin(newPin){
+  if(newPin && newPin.length >= 4){ localStorage.setItem('jarvisPin', newPin); return true; }
+  return false;
+}
+function lockNow(){
+  document.getElementById('desktop').classList.remove('active');
+  document.getElementById('lockScreen').classList.add('active');
+  updateLockClock();
+  setTimeout(()=>{ const f=document.getElementById('lockPin'); if(f) f.focus(); }, 100);
+}
+
+/* ================= PWA SERVICE WORKER ================= */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+  });
+}
 
 /* ================= CLOCK ================= */
 function updateClock(){
@@ -571,6 +701,11 @@ function openApp(name){
   if(name==='cloud') openCloud();
   if(name==='maps') openMaps();
   if(name==='news') openNews();
+  if(name==='youtube') openYouTube();
+  if(name==='facebook') openFacebook();
+  if(name==='instagram') openInstagram();
+  if(name==='tiktok') openTiktok();
+  if(name==='playstore') openPlayStore();
 }
 
 /* ---------- TERMINAL ---------- */
@@ -732,6 +867,6 @@ function openSettings(){
 /* Open terminal by default after boot for effect */
 setTimeout(()=>{ /* left empty intentionally — user opens apps manually */ }, 3200);
 </script>
-<script src="apps-extra.js?v=6"></script>
+<script src="apps-extra.js?v=7"></script>
 </body>
 </html>
