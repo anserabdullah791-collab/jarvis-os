@@ -1,3 +1,38 @@
+const ICONS = {
+  mail: `<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>`,
+  calendar: `<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><circle cx="9" cy="14" r="1"/><circle cx="15" cy="14" r="1"/>`,
+  files: `<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/>`,
+  terminal: `<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M13 15h4"/>`,
+  music: `<circle cx="6" cy="18" r="2.5"/><circle cx="17" cy="16" r="2.5"/><path d="M8.5 18V6l9-2v12"/>`,
+  browser: `<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>`,
+  settings: `<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>`,
+  voice: `<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>`,
+  screenshot: `<path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/>`,
+  bluetooth: `<path d="M8 7l8 6-4 3.5V4.5l4 3.5-8 6"/>`,
+  calculator: `<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 11h.01M12 11h.01M16 11h.01M8 15h.01M12 15h.01M16 15h.01"/>`,
+  notes: `<path d="M4 20l1-5 11-11 4 4-11 11-5 1z"/><path d="M14 5l4 4"/>`,
+  clock: `<circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M10 2h4"/>`,
+  todo: `<path d="M4 6h4M4 12h4M4 18h4M11 6h9M11 12h9M11 18h9"/><path d="M4.3 5.7l.7.8 1.3-1.8"/>`,
+  password: `<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>`,
+  colorpicker: `<path d="M12 3a9 9 0 1 0 0 18c1.5 0 2-1 2-2s-.5-1.5-.5-2.5A2 2 0 0 1 15.5 14H17a4 4 0 0 0 4-4c0-4-4-7-9-7z"/><circle cx="8" cy="11" r="1"/><circle cx="12" cy="8" r="1"/><circle cx="16" cy="11" r="1"/>`,
+  converter: `<path d="M4 20V10M10 20V4M16 20v-7M4 20h16"/>`,
+  weather: `<circle cx="8" cy="8" r="3"/><path d="M8 2v1M8 13v1M2 8h1M13 8h1M4 4l.7.7M11.3 4.7l.7-.7"/><path d="M9 19h8a3 3 0 0 0 0-6 5 5 0 0 0-9.6-1.5A4 4 0 0 0 7 19z"/>`,
+  paint: `<path d="M9 15c-2 2-2 4-4 4s-2-3 0-5l8-8 3 3-7 6z"/><path d="M14 4l6 6"/>`,
+  qrcode: `<rect x="4" y="4" width="6" height="6"/><rect x="14" y="4" width="6" height="6"/><rect x="4" y="14" width="6" height="6"/><path d="M14 14h3v3h-3zM19 14v6h-3"/>`,
+  sysinfo: `<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>`,
+  stopwatch: `<circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M10 2h4"/>`,
+  photos: `<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 16l-5-5-4 4-3-3-5 5"/>`,
+  cloud: `<path d="M7 18a4 4 0 0 1-.5-8 5.5 5.5 0 0 1 10.7-1.6A4.5 4.5 0 0 1 17 18H7z"/><path d="M12 12v6M9.5 15.5L12 13l2.5 2.5"/>`,
+  maps: `<path d="M12 21s7-7.5 7-12a7 7 0 1 0-14 0c0 4.5 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/>`,
+  news: `<rect x="3" y="5" width="14" height="15" rx="1"/><path d="M7 9h6M7 12h6M7 15h4M17 8h4v9a2 2 0 0 1-2 2h-2"/>`,
+  chat: `<path d="M4 5h16v10H8l-4 4V5z"/><circle cx="8" cy="10" r=".8"/><circle cx="12" cy="10" r=".8"/><circle cx="16" cy="10" r=".8"/>`,
+  store: `<path d="M6 8h12l-1 12H7L6 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>`
+};
+function iconSVG(id, size){
+  const path = ICONS[id] || '<circle cx="12" cy="12" r="8"/>';
+  return `<svg class="neon-svg" viewBox="0 0 24 24" style="width:${size||'60%'};height:${size||'60%'};">${path}</svg>`;
+}
+
 window.addEventListener('error', function(e){
   const el = document.getElementById('greetSub');
   if(el) el.textContent = 'JS ERROR: ' + e.message + ' @ ' + (e.filename||'').split('/').pop() + ':' + e.lineno;
@@ -45,7 +80,7 @@ const STORE_APPS = [
 function openStore(){
   const cards = STORE_APPS.map(a => `
     <div class="store-item" onclick="closeWindow('store'); openApp('${a.id}')">
-      <div class="glyph">${a.glyph}</div>
+      <div class="glyph">${iconSVG(a.id)}</div>
       <div class="name">${a.name}</div>
       ${a.tag ? `<div class="tag">${a.tag}</div>` : ''}
     </div>`).join('');
