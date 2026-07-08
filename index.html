@@ -370,11 +370,11 @@
   <div class="lock-name">Abdullah Anser</div>
   <div class="lock-sub">Jarvis OS &middot; Locked</div>
   <div class="lock-form">
-    <input type="password" id="lockPin" class="lock-input" placeholder="Enter PIN" maxlength="8" autocomplete="off">
+    <input type="password" id="lockPin" class="lock-input" placeholder="Enter password" maxlength="24" autocomplete="off">
     <button class="lock-btn" onclick="tryUnlock()">&#8594;</button>
   </div>
   <div class="lock-error" id="lockError"></div>
-  <div class="lock-hint">Default PIN: 1010 &middot; change it in Settings</div>
+  <div class="lock-hint">Password protected &middot; changeable in Settings</div>
 </div>
 
 <div id="desktop">
@@ -499,7 +499,7 @@ function updateLockClock(){
 }
 setInterval(updateLockClock, 1000*15);
 
-function getStoredPin(){ return localStorage.getItem('jarvisPin') || '1010'; }
+function getStoredPin(){ return localStorage.getItem('jarvisPin') || 'jarvis1.1'; }
 function tryUnlock(){
   const field = document.getElementById('lockPin');
   const err = document.getElementById('lockError');
