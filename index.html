@@ -270,6 +270,29 @@
   #greetCard .gc-sub{ color:var(--text-dim); font-size:11px; margin-bottom:10px; }
   #greetCard .gc-row{ display:flex; align-items:center; gap:8px; font-size:11.5px; color:var(--text-main); padding:5px 0; border-top:1px solid rgba(255,255,255,0.06); }
   #greetCard .gc-dot{ width:6px; height:6px; border-radius:50%; background:var(--success); box-shadow:0 0 6px var(--success); }
+
+  /* ---------- new app UI: mail / calendar / photos ---------- */
+  .mail-row{ display:flex; align-items:center; gap:10px; padding:10px 14px; border-top:1px solid rgba(255,255,255,0.06); cursor:pointer; font-size:12.5px; }
+  .mail-row:hover{ background:rgba(0,217,255,0.06); }
+  .mail-row.unread{ font-weight:700; color:#fff; }
+  .mail-row .mail-from{ width:90px; flex-shrink:0; color:var(--accent); }
+  .mail-row .mail-subj{ flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .mail-row .mail-time{ width:70px; text-align:right; color:var(--text-dim); font-size:10.5px; }
+  .cal-grid{ display:grid; grid-template-columns:repeat(7, 1fr); gap:4px; }
+  .cal-dow{ text-align:center; font-size:10px; color:var(--text-dim); padding:4px 0; }
+  .cal-cell{ text-align:center; font-size:12px; padding:8px 0; border-radius:6px; background:rgba(255,255,255,0.03); }
+  .cal-cell.today{ background:var(--accent); color:#04141f; font-weight:700; box-shadow:0 0 10px rgba(0,217,255,0.6); }
+  .cal-cell.empty{ background:transparent; }
+  .photo-grid{ display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; padding:14px; }
+  .photo-tile{ height:80px; border-radius:8px; cursor:pointer; border:1px solid rgba(0,217,255,0.2); transition:transform .15s; }
+  .photo-tile:hover{ transform:scale(1.05); }
+
+  /* ---------- taskbar: pinned apps + system tray ---------- */
+  #taskbarPinned{ display:flex; align-items:center; gap:6px; margin-left:14px; }
+  #taskbarPinned .pin-icon{ width:26px; height:26px; border-radius:6px; display:flex; align-items:center; justify-content:center;
+    background:rgba(0,217,255,0.06); border:1px solid rgba(0,217,255,0.18); cursor:pointer; font-size:13px; color:var(--accent); }
+  #taskbarPinned .pin-icon:hover{ background:rgba(0,217,255,0.16); }
+  #systemTray{ display:flex; align-items:center; gap:12px; margin-right:14px; font-size:13px; color:var(--accent); }
 </style>
 </head>
 <body>
@@ -301,33 +324,24 @@
     <div class="gc-row"><span class="gc-dot"></span><span>WhatsApp channel: Connected</span></div>
   </div>
   <div id="icons">
-    <div class="icon" onclick="openApp('terminal')">
-      <div class="glyph">&gt;_</div><div class="label">Terminal</div>
-    </div>
-    <div class="icon" onclick="openApp('browser')">
-      <div class="glyph">&#127760;</div><div class="label">Browser</div>
-    </div>
-    <div class="icon" onclick="openApp('chat')">
-      <div class="glyph">&#9679;</div><div class="label">Jarvis Chat</div>
-    </div>
-    <div class="icon" onclick="openApp('files')">
-      <div class="glyph">&#128193;</div><div class="label">Files</div>
-    </div>
-    <div class="icon" onclick="openApp('settings')">
-      <div class="glyph">&#9881;</div><div class="label">Settings</div>
-    </div>
-    <div class="icon" onclick="openApp('store')">
-      <div class="glyph">&#128230;</div><div class="label">Jarvis Store</div>
-    </div>
-    <div class="icon" onclick="openApp('voice')">
-      <div class="glyph">&#127908;</div><div class="label">Voice Assistant</div>
-    </div>
-    <div class="icon" onclick="openApp('screenshot')">
-      <div class="glyph">&#128247;</div><div class="label">Screenshot</div>
-    </div>
-    <div class="icon" onclick="openApp('bluetooth')">
-      <div class="glyph">&#128367;</div><div class="label">Bluetooth</div>
-    </div>
+    <div class="icon" onclick="openApp('mail')"><div class="glyph">&#9993;</div><div class="label">Mail</div></div>
+    <div class="icon" onclick="openApp('calendar')"><div class="glyph">&#128197;</div><div class="label">Calendar</div></div>
+    <div class="icon" onclick="openApp('files')"><div class="glyph">&#128193;</div><div class="label">Files</div></div>
+    <div class="icon" onclick="openApp('terminal')"><div class="glyph">&gt;_</div><div class="label">Terminal</div></div>
+    <div class="icon" onclick="openApp('music')"><div class="glyph">&#127925;</div><div class="label">Music</div></div>
+    <div class="icon" onclick="openApp('browser')"><div class="glyph">&#127760;</div><div class="label">Browser</div></div>
+    <div class="icon" onclick="openApp('settings')"><div class="glyph">&#9881;</div><div class="label">Settings</div></div>
+    <div class="icon" onclick="openApp('photos')"><div class="glyph">&#128247;</div><div class="label">Photos</div></div>
+    <div class="icon" onclick="openApp('notes')"><div class="glyph">&#128221;</div><div class="label">Notes</div></div>
+    <div class="icon" onclick="openApp('cloud')"><div class="glyph">&#9729;</div><div class="label">Cloud</div></div>
+    <div class="icon" onclick="openApp('sysinfo')"><div class="glyph">&#128187;</div><div class="label">System Monitor</div></div>
+    <div class="icon" onclick="openApp('maps')"><div class="glyph">&#128506;</div><div class="label">Maps</div></div>
+    <div class="icon" onclick="openApp('news')"><div class="glyph">&#128240;</div><div class="label">News</div></div>
+    <div class="icon" onclick="openApp('chat')"><div class="glyph">&#9679;</div><div class="label">Jarvis Chat</div></div>
+    <div class="icon" onclick="openApp('store')"><div class="glyph">&#128230;</div><div class="label">Jarvis Store</div></div>
+    <div class="icon" onclick="openApp('voice')"><div class="glyph">&#127908;</div><div class="label">Voice Assistant</div></div>
+    <div class="icon" onclick="openApp('screenshot')"><div class="glyph">&#128247;</div><div class="label">Screenshot</div></div>
+    <div class="icon" onclick="openApp('bluetooth')"><div class="glyph">&#128367;</div><div class="label">Bluetooth</div></div>
   </div>
 </div>
 
@@ -346,7 +360,20 @@
 
 <div id="taskbar">
   <div id="startBtn" onclick="toggleStart()">&#9673; JARVIS</div>
+  <div id="taskbarPinned">
+    <div class="pin-icon" onclick="openApp('browser')" title="Browser">&#127760;</div>
+    <div class="pin-icon" onclick="openApp('terminal')" title="Terminal">&gt;_</div>
+    <div class="pin-icon" onclick="openApp('files')" title="Files">&#128193;</div>
+    <div class="pin-icon" onclick="openApp('mail')" title="Mail">&#9993;</div>
+    <div class="pin-icon" onclick="openApp('calendar')" title="Calendar">&#128197;</div>
+    <div class="pin-icon" onclick="openApp('voice')" title="Voice Assistant">&#127908;</div>
+    <div class="pin-icon" onclick="openApp('settings')" title="Settings">&#9881;</div>
+  </div>
   <div id="taskApps"></div>
+  <div id="systemTray">
+    <span title="Online" id="trayWifi">&#128225;</span>
+    <span title="Sound" id="traySound">&#128266;</span>
+  </div>
   <div id="clock"><div id="clockTime">--:--</div><div class="date" id="clockDate">--</div></div>
 </div>
 
@@ -530,6 +557,13 @@ function openApp(name){
   if(name==='qrcode') openQrCode();
   if(name==='sysinfo') openSysInfo();
   if(name==='stopwatch') openStopwatch();
+  if(name==='mail') openMail();
+  if(name==='calendar') openCalendar();
+  if(name==='music') openMusic();
+  if(name==='photos') openPhotos();
+  if(name==='cloud') openCloud();
+  if(name==='maps') openMaps();
+  if(name==='news') openNews();
 }
 
 /* ---------- TERMINAL ---------- */
@@ -691,6 +725,6 @@ function openSettings(){
 /* Open terminal by default after boot for effect */
 setTimeout(()=>{ /* left empty intentionally — user opens apps manually */ }, 3200);
 </script>
-<script src="apps-extra.js?v=4"></script>
+<script src="apps-extra.js?v=5"></script>
 </body>
 </html>
