@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JARVIS OS</title>
+<style>
+  :root{
+    --bg-deep:#070a12;
+    --bg-panel: rgba(16,22,35,0.85);
+    --accent:#00d9ff;
+    --accent-dim:#0099b8;
+    --accent-orange:#ff8a3d;
+    --text-main:#e8f4f8;
+    --text-dim:#7d95a3;
+    --border-glow: rgba(0,217,255,0.35);
+    --success:#31e07d;
+    --danger:#ff4d5e;
+    --radius:12px;
+    --font-ui: 'Segoe UI', Inter, Roboto, -apple-system, sans-serif;
+    --font-mono: 'Consolas', 'SF Mono', Menlo, monospace;
+  }
+  *{box-sizing:border-box; user-select:none;}
+  html,body{
+    margin:0; padding:0; width:100%; height:100%; overflow:hidden;
+    font-family:var(--font-ui); background:var(--bg-deep); color:var(--text-main);
+  }
+
+  /* ---------- BOOT SCREEN ---------- */
+  #boot{
+    position:fixed; inset:0; background:radial-gradient(ellipse at center, #0d1526 0%, #05070c 100%);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:9999;
+    transition:opacity 0.8s ease;
+  }
+  #boot .logo{
+    font-size:52px; font-weight:700; letter-spacing:10px; color:var(--accent);
+    text-shadow:0 0 25px rgba(0,217,255,0.8), 0 0 60px rgba(0,217,255,0.4);
+    margin-bottom:6px;
+  }
+  #boot .tagline{ color:var(--text-dim); letter-spacing:3px; font-size:12px; margin-bottom:40px;}
+  #boot .ring{
+    width:90px; height:90px; border-radius:50%;
+    border:2px solid rgba(0,217,255,0.15); border-top:2px solid var(--accent);
+    animation:spin 1.1s linear infinite; margin-bottom:30px;
+    box-shadow:0 0 25px rgba(0,217,255,0.35);
+  }
+  @keyframes spin{ to{ transform:rotate(360deg);} }
+  #boot .bootbar{ width:280px; height:4px; background:rgba(255,255,255,0.08); border-radius:4px; overflow:hidden;}
+  #boot .bootbar-fill{ height:100%; width:0%; background:linear-gradient(90deg,var(--accent-dim),var(--accent)); box-shadow:0 0 10px var(--accent); transition:width 2.4s cubic-bezier(.2,.7,.3,1);}
+  #boot .bootlog{ margin-top:16px; font-family:var(--font-mono); font-size:11px; color:var(--text-dim); height:16px;}
+
+  /* ---------- DESKTOP ---------- */
+  #desktop{
+    position:fixed; inset:0;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(0,217,255,0.06), transparent 40%),
+      radial-gradient(circle at 85% 80%, rgba(255,138,61,0.05), transparent 40%),
+      linear-gradient(160deg, #0a0e17 0%, #060810 60%, #04050a 100%);
+    display:none;
+  }
+  #desktop.active{ display:block; }
+
+  #icons{
+    position:absolute; top:24px; left:24px; display:flex; flex-direction:column; gap:22px;
+  }
+  .icon{
+    width:84px; display:flex; flex-direction:column; align-items:center; gap:6px; cursor:pointer; padding:8px; border-radius:10px;
+  }
+  .icon:hover{ background:rgba(0,217,255,0.08); }
+  .icon .glyph{
+    width:52px; height:52px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:24px;
+    background:linear-gradient(145deg, rgba(0,217,255,0.18), rgba(0,217,255,0.05));
+    border:1px solid var(--border-glow); box-shadow:0 0 18px rgba(0,217,255,0.15);
+  }
+  .icon .label{ font-size:11px; color:var(--text-main); text-align:center; text-shadow:0 1px 2px #000;}
+
+  /* ---------- TASKBAR ---------- */
+  #taskbar{
+    position:fixed; left:0; right:0; bottom:0; height:56px; z-index:500;
+    background:rgba(10,14,22,0.9); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
+    border-top:1px solid rgba(0,217,255,0.25);
+    display:flex; align-items:center; padding:0 14px; gap:10px;
+  }
+  #startBtn{
+    display:flex; align-items:center; gap:8px; padding:8px 16px; border-radius:8px; cursor:pointer;
+    background:linear-gradient(135deg, rgba(0,217,255,0.25), rgba(0,153,184,0.15));
+    border:1px solid var(--border-glow); font-weight:600; font-size:13px; letter-spacing:1px;
+  }
+  #startBtn:hover{ box-shadow:0 0 16px rgba(0,217,255,0.4); }
+  #taskApps{ display:flex; gap:8px; flex:1; overflow-x:auto; }
+  .taskbtn{
+    padding:7px 14px; border-radius:7px; font-size:12px; cursor:pointer; color:var(--text-dim);
+    background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); white-space:nowrap;
+  }
+  .taskbtn.active{ color:var(--accent); border-color:var(--border-glow); background:rgba(0,217,255,0.08); }
+  #clock{ font-family:var(--font-mono); font-size:13px; color:var(--text-main); text-align:right; min-width:130px; }
+  #clock .date{ font-size:10px; color:var(--text-dim); }
+
+  /* ---------- START MENU ---------- */
+  #startMenu{
+    position:fixed; left:14px; bottom:66px; width:280px; z-index:600;
+    background:var(--bg-panel); backdrop-filter:blur(20px); border:1px solid var(--border-glow);
+    border-radius:var(--radius); padding:14px; display:none; box-shadow:0 10px 40px rgba(0,0,0,0.5);
+  }
+  #startMenu.open{ display:block; }
+  #startMenu .sm-title{ font-size:11px; color:var(--text-dim); letter-spacing:2px; margin-bottom:10px; }
+  .sm-item{
+    display:flex; align-items:center; gap:12px; padding:9px 10px; border-radius:8px; cursor:pointer; font-size:13px;
+  }
+  .sm-item:hover{ background:rgba(0,217,255,0.1); }
+  .sm-glyph{ width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; background:rgba(0,217,255,0.12); font-size:15px;}
+
+  /* ---------- WINDOWS ---------- */
+  .win{
+    position:absolute; min-width:320px; min-height:220px;
+    background:var(--bg-panel); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+    border:1px solid var(--border-glow); border-radius:var(--radius);
+    box-shadow:0 20px 60px rgba(0,0,0,0.55), 0 0 0 1px rgba(0,217,255,0.05);
+    display:flex; flex-direction:column; overflow:hidden; z-index:10;
+  }
+  .win-header{
+    height:38px; display:flex; align-items:center; justify-content:space-between; padding:0 10px;
+    background:linear-gradient(180deg, rgba(0,217,255,0.1), rgba(0,217,255,0.02));
+    border-bottom:1px solid rgba(0,217,255,0.15); cursor:move; flex-shrink:0;
+  }
+  .win-title{ font-size:12px; font-weight:600; letter-spacing:0.5px; display:flex; align-items:center; gap:8px;}
+  .win-controls{ display:flex; gap:6px; }
+  .win-btn{
+    width:20px; height:20px; border-radius:5px; display:flex; align-items:center; justify-content:center;
+    font-size:11px; cursor:pointer; color:var(--text-dim); background:rgba(255,255,255,0.04);
+  }
+  .win-btn:hover{ background:rgba(255,255,255,0.12); color:var(--text-main); }
+  .win-btn.close:hover{ background:var(--danger); color:#fff; }
+  .win-body{ flex:1; overflow:auto; position:relative; }
+  .win-resize{ position:absolute; right:0; bottom:0; width:16px; height:16px; cursor:nwse-resize; }
+
+  /* ---------- TERMINAL APP ---------- */
+  .term{ background:#04070c; color:#4de3ff; font-family:var(--font-mono); font-size:13px; padding:12px; height:100%; overflow-y:auto; }
+  .term .line{ white-space:pre-wrap; margin-bottom:2px; line-height:1.5; }
+  .term .prompt-line{ display:flex; }
+  .term .prompt-tag{ color:var(--accent-orange); margin-right:6px; }
+  .term input{
+    background:transparent; border:none; outline:none; color:#e8f4f8; font-family:var(--font-mono);
+    font-size:13px; flex:1;
+  }
+
+  /* ---------- BROWSER APP ---------- */
+  .browser{ display:flex; flex-direction:column; height:100%; }
+  .browser-bar{ display:flex; gap:8px; padding:8px; background:rgba(255,255,255,0.03); border-bottom:1px solid rgba(255,255,255,0.06); flex-shrink:0;}
+  .browser-bar input{
+    flex:1; background:rgba(0,0,0,0.3); border:1px solid rgba(0,217,255,0.2); border-radius:20px;
+    padding:7px 14px; color:var(--text-main); font-size:12px; outline:none;
+  }
+  .browser-bar button{
+    background:rgba(0,217,255,0.15); border:1px solid var(--border-glow); color:var(--accent);
+    border-radius:20px; padding:6px 16px; font-size:12px; cursor:pointer;
+  }
+  .browser iframe{ flex:1; border:none; width:100%; background:#fff; }
+  .browser-bookmarks{ display:flex; gap:6px; padding:0 8px 8px; flex-wrap:wrap;}
+  .bm{ font-size:11px; padding:4px 10px; background:rgba(255,255,255,0.04); border-radius:12px; cursor:pointer; color:var(--text-dim);}
+  .bm:hover{ color:var(--accent); }
+
+  /* ---------- GENERIC PANEL CONTENT ---------- */
+  .panel{ padding:20px; font-size:13px; line-height:1.7; color:var(--text-main); }
+  .panel h3{ color:var(--accent); margin-top:0; font-size:15px; letter-spacing:1px;}
+  .file-tree div{ padding:6px 0; padding-left:calc(var(--depth,0) * 18px); color:var(--text-dim); font-size:12.5px; }
+  .file-tree .folder{ color:var(--accent); font-weight:600; }
+  .chat-cta{
+    display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:16px; padding:20px; text-align:center;
+  }
+  .chat-cta .avatar{
+    width:64px; height:64px; border-radius:50%; background:linear-gradient(145deg, var(--accent), var(--accent-dim));
+    display:flex; align-items:center; justify-content:center; font-size:28px; box-shadow:0 0 30px rgba(0,217,255,0.5);
+  }
+  .chat-cta button{
+    background:linear-gradient(135deg, var(--accent), var(--accent-dim)); border:none; color:#04121a; font-weight:700;
+    padding:10px 26px; border-radius:24px; cursor:pointer; font-size:13px; letter-spacing:0.5px;
+  }
+  .toggle-row{ display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.06);}
+  .switch{ width:40px; height:22px; border-radius:12px; background:rgba(255,255,255,0.1); position:relative; cursor:pointer;}
+  .switch.on{ background:var(--accent-dim); }
+  .switch .knob{ width:18px; height:18px; border-radius:50%; background:#fff; position:absolute; top:2px; left:2px; transition:left 0.2s; }
+  .switch.on .knob{ left:20px; }
+
+  ::-webkit-scrollbar{ width:8px; height:8px; }
+  ::-webkit-scrollbar-thumb{ background:rgba(0,217,255,0.25); border-radius:4px; }
+  ::-webkit-scrollbar-track{ background:transparent; }
+</style>
+</head>
+<body>
+
+<div id="boot">
+  <div class="ring"></div>
+  <div class="logo">J A R V I S</div>
+  <div class="tagline">PERSONAL AI OPERATING SYSTEM</div>
+  <div class="bootbar"><div class="bootbar-fill" id="bootFill"></div></div>
+  <div class="bootlog" id="bootLog">Initializing core...</div>
+</div>
+
+<div id="desktop">
+  <div id="icons">
+    <div class="icon" ondblclick="openApp('terminal')">
+      <div class="glyph">&gt;_</div><div class="label">Terminal</div>
+    </div>
+    <div class="icon" ondblclick="openApp('browser')">
+      <div class="glyph">&#127760;</div><div class="label">Browser</div>
+    </div>
+    <div class="icon" ondblclick="openApp('chat')">
+      <div class="glyph">&#9679;</div><div class="label">Jarvis Chat</div>
+    </div>
+    <div class="icon" ondblclick="openApp('files')">
+      <div class="glyph">&#128193;</div><div class="label">Files</div>
+    </div>
+    <div class="icon" ondblclick="openApp('settings')">
+      <div class="glyph">&#9881;</div><div class="label">Settings</div>
+    </div>
+  </div>
+</div>
+
+<div id="startMenu">
+  <div class="sm-title">JARVIS OS · APPLICATIONS</div>
+  <div class="sm-item" onclick="openApp('terminal'); toggleStart()"><div class="sm-glyph">&gt;_</div>Terminal</div>
+  <div class="sm-item" onclick="openApp('browser'); toggleStart()"><div class="sm-glyph">&#127760;</div>Browser</div>
+  <div class="sm-item" onclick="openApp('chat'); toggleStart()"><div class="sm-glyph">&#9679;</div>Jarvis Chat</div>
+  <div class="sm-item" onclick="openApp('files'); toggleStart()"><div class="sm-glyph">&#128193;</div>File Explorer</div>
+  <div class="sm-item" onclick="openApp('settings'); toggleStart()"><div class="sm-glyph">&#9881;</div>Settings</div>
+</div>
+
+<div id="taskbar">
+  <div id="startBtn" onclick="toggleStart()">&#9673; JARVIS</div>
+  <div id="taskApps"></div>
+  <div id="clock"><div id="clockTime">--:--</div><div class="date" id="clockDate">--</div></div>
+</div>
+
+<script>
+/* ================= BOOT SEQUENCE ================= */
+const bootMessages = [
+  "Initializing core...",
+  "Loading personality matrix...",
+  "Mounting skill registry (92 modules)...",
+  "Establishing secure sandbox...",
+  "Connecting Jarvis Chat link...",
+  "Welcome, Abdullah."
+];
+let bi = 0;
+const bootLog = document.getElementById('bootLog');
+const bootFill = document.getElementById('bootFill');
+bootFill.style.width = '92%';
+const bootInterval = setInterval(()=>{
+  bi++;
+  if(bi < bootMessages.length){ bootLog.textContent = bootMessages[bi]; }
+  if(bi >= bootMessages.length - 1){
+    clearInterval(bootInterval);
+    setTimeout(()=>{
+      document.getElementById('boot').style.opacity = '0';
+      setTimeout(()=>{
+        document.getElementById('boot').style.display='none';
+        document.getElementById('desktop').classList.add('active');
+      }, 800);
+    }, 500);
+  }
+}, 420);
+
+/* ================= CLOCK ================= */
+function updateClock(){
+  const d = new Date();
+  document.getElementById('clockTime').textContent = d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  document.getElementById('clockDate').textContent = d.toLocaleDateString([], {weekday:'short', month:'short', day:'numeric'});
+}
+updateClock(); setInterval(updateClock, 1000*30);
+
+/* ================= START MENU ================= */
+function toggleStart(){ document.getElementById('startMenu').classList.toggle('open'); }
+document.addEventListener('click', (e)=>{
+  const sm = document.getElementById('startMenu');
+  const sb = document.getElementById('startBtn');
+  if(sm.classList.contains('open') && !sm.contains(e.target) && !sb.contains(e.target)){ sm.classList.remove('open'); }
+});
+
+/* ================= WINDOW MANAGER ================= */
+let zTop = 20;
+const openWindows = {};
+
+function focusWindow(id){
+  zTop += 1;
+  const w = document.getElementById('win-'+id);
+  if(w) w.style.zIndex = zTop;
+  document.querySelectorAll('.taskbtn').forEach(b=>b.classList.remove('active'));
+  const tb = document.getElementById('task-'+id);
+  if(tb) tb.classList.add('active');
+}
+
+function createWindow(id, title, glyph, contentHTML, opts={}){
+  if(openWindows[id]){
+    document.getElementById('win-'+id).style.display='flex';
+    focusWindow(id);
+    return;
+  }
+  const w = document.createElement('div');
+  w.className = 'win';
+  w.id = 'win-'+id;
+  w.style.width = (opts.width||480)+'px';
+  w.style.height = (opts.height||360)+'px';
+  w.style.left = (opts.x || (60+Object.keys(openWindows).length*30))+'px';
+  w.style.top = (opts.y || (50+Object.keys(openWindows).length*24))+'px';
+  w.innerHTML = `
+    <div class="win-header" onmousedown="startDrag(event,'${id}')">
+      <div class="win-title">${glyph} ${title}</div>
+      <div class="win-controls">
+        <div class="win-btn" onclick="minimizeWindow('${id}')">&#8211;</div>
+        <div class="win-btn" onclick="maximizeWindow('${id}')">&#9633;</div>
+        <div class="win-btn close" onclick="closeWindow('${id}')">&#10005;</div>
+      </div>
+    </div>
+    <div class="win-body" id="body-${id}">${contentHTML}</div>
+    <div class="win-resize" onmousedown="startResize(event,'${id}')"></div>
+  `;
+  document.getElementById('desktop').appendChild(w);
+  w.addEventListener('mousedown', ()=>focusWindow(id));
+  openWindows[id] = true;
+  focusWindow(id);
+
+  const taskApps = document.getElementById('taskApps');
+  const tb = document.createElement('div');
+  tb.className = 'taskbtn active';
+  tb.id = 'task-'+id;
+  tb.textContent = title;
+  tb.onclick = ()=>{ 
+    const win = document.getElementById('win-'+id);
+    win.style.display = (win.style.display==='none') ? 'flex' : (win.style.display==='flex'?'none':'flex');
+    if(win.style.display==='flex') focusWindow(id);
+  };
+  taskApps.appendChild(tb);
+}
+
+function closeWindow(id){
+  const w = document.getElementById('win-'+id);
+  if(w) w.remove();
+  const tb = document.getElementById('task-'+id);
+  if(tb) tb.remove();
+  delete openWindows[id];
+}
+function minimizeWindow(id){ document.getElementById('win-'+id).style.display='none'; }
+function maximizeWindow(id){
+  const w = document.getElementById('win-'+id);
+  if(w.dataset.max === '1'){
+    w.style.width = w.dataset.pw; w.style.height = w.dataset.ph;
+    w.style.left = w.dataset.px; w.style.top = w.dataset.py;
+    w.dataset.max = '0';
+  } else {
+    w.dataset.pw = w.style.width; w.dataset.ph = w.style.height;
+    w.dataset.px = w.style.left; w.dataset.py = w.style.top;
+    w.style.width = '96vw'; w.style.height = 'calc(96vh - 70px)';
+    w.style.left = '2vw'; w.style.top = '2vh';
+    w.dataset.max = '1';
+  }
+}
+
+let dragCtx = null;
+function startDrag(e, id){
+  const w = document.getElementById('win-'+id);
+  dragCtx = { id, startX:e.clientX, startY:e.clientY, origLeft:parseInt(w.style.left), origTop:parseInt(w.style.top) };
+  document.addEventListener('mousemove', onDrag);
+  document.addEventListener('mouseup', stopDrag);
+}
+function onDrag(e){
+  if(!dragCtx) return;
+  const w = document.getElementById('win-'+dragCtx.id);
+  const dx = e.clientX - dragCtx.startX, dy = e.clientY - dragCtx.startY;
+  w.style.left = (dragCtx.origLeft+dx)+'px';
+  w.style.top = Math.max(0,(dragCtx.origTop+dy))+'px';
+}
+function stopDrag(){ dragCtx=null; document.removeEventListener('mousemove', onDrag); document.removeEventListener('mouseup', stopDrag); }
+
+let resizeCtx = null;
+function startResize(e, id){
+  e.stopPropagation();
+  const w = document.getElementById('win-'+id);
+  resizeCtx = { id, startX:e.clientX, startY:e.clientY, origW:parseInt(w.style.width), origH:parseInt(w.style.height) };
+  document.addEventListener('mousemove', onResize);
+  document.addEventListener('mouseup', stopResize);
+}
+function onResize(e){
+  if(!resizeCtx) return;
+  const w = document.getElementById('win-'+resizeCtx.id);
+  const dx = e.clientX - resizeCtx.startX, dy = e.clientY - resizeCtx.startY;
+  w.style.width = Math.max(320, resizeCtx.origW+dx)+'px';
+  w.style.height = Math.max(220, resizeCtx.origH+dy)+'px';
+}
+function stopResize(){ resizeCtx=null; document.removeEventListener('mousemove', onResize); document.removeEventListener('mouseup', stopResize); }
+
+/* ================= APP LAUNCHER ================= */
+function openApp(name){
+  if(name==='terminal') openTerminal();
+  if(name==='browser') openBrowser();
+  if(name==='chat') openChat();
+  if(name==='files') openFiles();
+  if(name==='settings') openSettings();
+}
+
+/* ---------- TERMINAL ---------- */
+function openTerminal(){
+  createWindow('terminal', 'Terminal', '&gt;_', `
+    <div class="term" id="termBody">
+      <div class="line">JARVIS Terminal v1.0 — type 'help' for commands.</div>
+      <div class="prompt-line">
+        <span class="prompt-tag">jarvis@os:~$</span>
+        <input id="termInput" autofocus />
+      </div>
+    </div>
+  `, {width:560, height:380});
+  setTimeout(()=>{
+    const input = document.getElementById('termInput');
+    if(input){ input.focus(); input.addEventListener('keydown', handleTermKey); }
+    document.getElementById('win-terminal').addEventListener('click', ()=>{
+      const i = document.getElementById('termInput'); if(i) i.focus();
+    });
+  }, 50);
+}
+function termPrint(text){
+  const body = document.getElementById('termBody');
+  const promptLine = body.querySelector('.prompt-line');
+  const line = document.createElement('div');
+  line.className = 'line';
+  line.textContent = text;
+  body.insertBefore(line, promptLine);
+  body.scrollTop = body.scrollHeight;
+}
+function handleTermKey(e){
+  if(e.key !== 'Enter') return;
+  const input = e.target;
+  const cmd = input.value.trim();
+  termPrint('jarvis@os:~$ ' + cmd);
+  runTermCommand(cmd);
+  input.value = '';
+  document.getElementById('termBody').scrollTop = 999999;
+}
+function runTermCommand(cmdRaw){
+  const cmd = cmdRaw.toLowerCase();
+  const body = document.getElementById('termBody');
+  if(cmd === '' ) return;
+  if(cmd === 'help'){
+    termPrint('Available commands: help, about, whoami, date, sysinfo, skills, ls, echo [text], open-chat, clear, joke, matrix');
+  } else if(cmd === 'about'){
+    termPrint('JARVIS — personal AI Superagent. Sharp, warm, proactive. Built for Abdullah Anser.');
+  } else if(cmd === 'whoami'){
+    termPrint('abdullah@jarvis-os (owner)');
+  } else if(cmd === 'date'){
+    termPrint(new Date().toString());
+  } else if(cmd === 'sysinfo'){
+    termPrint('JARVIS OS v1.0 | Kernel: Base44 Superagent runtime | Sandbox: Debian 12 (gVisor) | Skills loaded: 92');
+  } else if(cmd === 'skills'){
+    termPrint('Active teams: Jarvis(Chief) Scout Ledger Ringer Lens Forge Warden Herald Scribe Patch Chalk — 92 skill modules loaded.');
+  } else if(cmd === 'ls'){
+    termPrint('Documents/  Automations/  Skills/  Rules/  Connectors/  README.txt');
+  } else if(cmd.startsWith('echo ')){
+    termPrint(cmdRaw.slice(5));
+  } else if(cmd === 'open-chat'){
+    termPrint('Opening secure Jarvis chat channel...');
+    setTimeout(()=>window.open('https://app.base44.com/superagent/6a3be2a74a09f2cd7f59d2ee','_blank'), 400);
+  } else if(cmd === 'clear'){
+    document.querySelectorAll('#termBody .line').forEach(l=>l.remove());
+  } else if(cmd === 'joke'){
+    const jokes = [
+      "Why do programmers prefer dark mode? Because light attracts bugs.",
+      "There are 10 types of people: those who understand binary and those who don't.",
+      "I told my firewall a joke. It didn't laugh — strict default-deny policy."
+    ];
+    termPrint(jokes[Math.floor(Math.random()*jokes.length)]);
+  } else if(cmd === 'matrix'){
+    termPrint('01001010 01000001 01010010 01010110 01001001 01010011 ... (matrix mode engaged)');
+  } else {
+    termPrint(`jarvis: command not found: ${cmdRaw}  (type 'help')`);
+  }
+}
+
+/* ---------- BROWSER ---------- */
+function openBrowser(){
+  createWindow('browser', 'Browser', '&#127760;', `
+    <div class="browser">
+      <div class="browser-bar">
+        <input id="browserUrl" placeholder="Enter URL and press Go..." value="https://www.google.com" />
+        <button onclick="navigateBrowser()">Go</button>
+      </div>
+      <div class="browser-bookmarks">
+        <div class="bm" onclick="navigateBrowser('https://www.google.com')">Google</div>
+        <div class="bm" onclick="navigateBrowser('https://docs.base44.com')">Base44 Docs</div>
+        <div class="bm" onclick="navigateBrowser('https://github.com')">GitHub</div>
+        <div class="bm" onclick="navigateBrowser('https://en.wikipedia.org')">Wikipedia</div>
+      </div>
+      <iframe id="browserFrame" src="https://www.google.com"></iframe>
+    </div>
+  `, {width:760, height:520});
+}
+function navigateBrowser(url){
+  const input = document.getElementById('browserUrl');
+  let target = url || input.value.trim();
+  if(!/^https?:\/\//i.test(target)) target = 'https://' + target;
+  input.value = target;
+  document.getElementById('browserFrame').src = target;
+}
+
+/* ---------- CHAT ---------- */
+function openChat(){
+  createWindow('chat', 'Jarvis Chat', '&#9679;', `
+    <div class="chat-cta">
+      <div class="avatar">J</div>
+      <div>
+        <div style="font-weight:600; font-size:15px; margin-bottom:4px;">Jarvis is installed and running</div>
+        <div style="color:var(--text-dim); font-size:12.5px; max-width:280px;">Full agent — WhatsApp connected, automations active, all skills loaded. Open the live chat to talk to me directly.</div>
+      </div>
+      <button onclick="window.open('https://app.base44.com/superagent/6a3be2a74a09f2cd7f59d2ee','_blank')">Open Jarvis Chat</button>
+    </div>
+  `, {width:380, height:340});
+}
+
+/* ---------- FILES ---------- */
+function openFiles(){
+  createWindow('files', 'File Explorer', '&#128193;', `
+    <div class="panel">
+      <h3>/ SYSTEM</h3>
+      <div class="file-tree">
+        <div class="folder">📁 Skills (92 modules)</div>
+        <div style="--depth:1">📄 web-design-engineer</div>
+        <div style="--depth:1">📄 firewall-builder</div>
+        <div style="--depth:1">📄 spec-driven-development</div>
+        <div style="--depth:1">📄 gpt-image-2</div>
+        <div class="folder">📁 Rules</div>
+        <div style="--depth:1">📄 jarvis-team-roster.md</div>
+        <div style="--depth:1">📄 jarvis-self-defense.md</div>
+        <div class="folder">📁 Automations (10 active)</div>
+        <div style="--depth:1">📄 Daily Morning Briefing</div>
+        <div style="--depth:1">📄 Unread Email 24h Reminder</div>
+        <div class="folder">📁 Connectors</div>
+        <div style="--depth:1">📄 Gmail, Calendar, Drive, GitHub, Slack...</div>
+      </div>
+    </div>
+  `, {width:420, height:420});
+}
+
+/* ---------- SETTINGS ---------- */
+function openSettings(){
+  createWindow('settings', 'Settings', '&#9881;', `
+    <div class="panel">
+      <h3>ABOUT JARVIS OS</h3>
+      <div class="toggle-row"><span>Version</span><span>1.0.0</span></div>
+      <div class="toggle-row"><span>Owner</span><span>Abdullah Anser</span></div>
+      <div class="toggle-row"><span>Primary channel</span><span>WhatsApp</span></div>
+      <div class="toggle-row"><span>Fast Response Mode</span><div class="switch on" onclick="this.classList.toggle('on')"><div class="knob"></div></div></div>
+      <div class="toggle-row"><span>Notifications</span><div class="switch on" onclick="this.classList.toggle('on')"><div class="knob"></div></div></div>
+      <div class="toggle-row"><span>Personal-use-only lock</span><div class="switch on" onclick="this.classList.toggle('on')"><div class="knob"></div></div></div>
+      <p style="color:var(--text-dim); font-size:12px; margin-top:16px;">This desktop is a live interface shell. The real Jarvis — memory, automations, and tools — runs on the Base44 Superagent backend, always on, reachable from any device.</p>
+    </div>
+  `, {width:400, height:380});
+}
+
+/* Open terminal by default after boot for effect */
+setTimeout(()=>{ /* left empty intentionally — user opens apps manually */ }, 3200);
+</script>
+</body>
+</html>
