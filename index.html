@@ -62,7 +62,8 @@
 
   #icons{
     position:absolute; top:24px; left:24px; right:24px; bottom:80px;
-    display:flex; flex-direction:column; flex-wrap:wrap; align-content:flex-start; gap:18px 8px;
+    display:grid; grid-auto-flow:column; grid-template-rows:repeat(auto-fill, 96px);
+    justify-content:start; gap:12px;
   }
   .icon{
     width:84px; display:flex; flex-direction:column; align-items:center; gap:6px; cursor:pointer; padding:8px; border-radius:10px;
