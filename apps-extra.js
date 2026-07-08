@@ -435,42 +435,218 @@ async function scanBluetooth(){
   }
 }
 
-/* ---------------- ENHANCED BROWSER / SEARCH ---------------- */
+/* ---------------- REAL TABBED BROWSER (multi-tab, back/forward, bookmarks, real search) ---------------- */
+const KNOWN_BLOCKED_SITES = ['facebook.com','instagram.com','tiktok.com','twitter.com','x.com','play.google.com','linkedin.com','amazon.com','netflix.com','spotify.com','whatsapp.com','google.com'];
+let browserTabs = [];
+let activeBrowserTabId = null;
+let browserTabSeq = 0;
+
 function openBrowser(){
+  if(browserTabs.length === 0){
+    newBrowserTab();
+  }
   createWindow('browser', 'Browser', '&#127760;', `
     <div class="browser">
+      <div class="browser-tabstrip" id="browserTabstrip"></div>
       <div class="browser-bar">
-        <input id="browserUrl" class="field" placeholder="Search the web or type a URL..." value="" onkeydown="if(event.key==='Enter') smartGo()">
+        <button class="nav-btn" onclick="browserBack()" title="Back">&#8592;</button>
+        <button class="nav-btn" onclick="browserForward()" title="Forward">&#8594;</button>
+        <button class="nav-btn" onclick="browserRefresh()" title="Refresh">&#8635;</button>
+        <button class="nav-btn" onclick="browserHome()" title="Home">&#8962;</button>
+        <input id="browserUrl" class="field" placeholder="Search the web or type a URL..." onkeydown="if(event.key==='Enter') smartGo()">
         <button class="btn" onclick="smartGo()">Go</button>
       </div>
       <div class="browser-bookmarks">
+        <div class="bm" onclick="browserLoadSite('youtube')">&#9654; YouTube</div>
+        <div class="bm" onclick="browserLoadSite('instagram')">&#128248; Instagram</div>
+        <div class="bm" onclick="browserLoadSite('facebook')">&#128075; Facebook</div>
+        <div class="bm" onclick="browserLoadSite('tiktok')">&#127925; TikTok</div>
+        <div class="bm" onclick="browserLoadSite('playstore')">&#128230; Play Store</div>
         <div class="bm" onclick="navigateBrowser('https://en.wikipedia.org')">Wikipedia</div>
-        <div class="bm" onclick="navigateBrowser('https://docs.base44.com')">Base44 Docs</div>
         <div class="bm" onclick="navigateBrowser('https://github.com')">GitHub</div>
         <div class="bm" onclick="navigateBrowser('https://news.ycombinator.com')">Hacker News</div>
       </div>
-      <div id="browserContent" style="flex:1; overflow:auto; background:#0c1018;">
-        <div class="search-results" style="color:var(--text-dim); font-size:12.5px;">Type a search term and hit Go — real results from Wikipedia + DuckDuckGo, no fake data. Or paste a direct URL to load the page.</div>
+      <div id="browserContent" style="flex:1; overflow:auto; background:#0c1018;"></div>
+    </div>
+  `, {width:820, height:580});
+  renderBrowserTabs();
+  renderActiveBrowserTab();
+}
+
+function getActiveTab(){ return browserTabs.find(t => t.id === activeBrowserTabId); }
+
+function newBrowserTab(kind, opts){
+  browserTabSeq++;
+  const tab = { id: 'tab' + browserTabSeq, kind: kind || 'home', title: opts && opts.title || 'New Tab', url: opts && opts.url || '', history: [], histIndex: -1 };
+  if(kind && kind !== 'home'){ tab.history.push({kind: tab.kind, url: tab.url, title: tab.title}); tab.histIndex = 0; }
+  browserTabs.push(tab);
+  activeBrowserTabId = tab.id;
+  renderBrowserTabs();
+  renderActiveBrowserTab();
+  return tab;
+}
+function switchBrowserTab(id){
+  activeBrowserTabId = id;
+  renderBrowserTabs();
+  renderActiveBrowserTab();
+}
+function closeBrowserTab(id, ev){
+  if(ev) ev.stopPropagation();
+  const idx = browserTabs.findIndex(t => t.id === id);
+  if(idx === -1) return;
+  browserTabs.splice(idx, 1);
+  if(browserTabs.length === 0){ newBrowserTab(); return; }
+  if(activeBrowserTabId === id){ activeBrowserTabId = browserTabs[Math.max(0, idx-1)].id; }
+  renderBrowserTabs();
+  renderActiveBrowserTab();
+}
+function renderBrowserTabs(){
+  const strip = document.getElementById('browserTabstrip');
+  if(!strip) return;
+  strip.innerHTML = browserTabs.map(t => `
+    <div class="browser-tab ${t.id === activeBrowserTabId ? 'active' : ''}" onclick="switchBrowserTab('${t.id}')">
+      <span class="tab-title">${t.title}</span>
+      <span class="tab-close" onclick="closeBrowserTab('${t.id}', event)">&times;</span>
+    </div>`).join('') + `<div class="browser-tab-new" onclick="newBrowserTab()">+</div>`;
+}
+
+function pushHistory(tab){
+  tab.history = tab.history.slice(0, tab.histIndex + 1);
+  tab.history.push({kind: tab.kind, url: tab.url, title: tab.title});
+  tab.histIndex = tab.history.length - 1;
+}
+function browserBack(){
+  const tab = getActiveTab(); if(!tab || tab.histIndex <= 0) return;
+  tab.histIndex--;
+  const h = tab.history[tab.histIndex];
+  tab.kind = h.kind; tab.url = h.url; tab.title = h.title;
+  renderActiveBrowserTab(true);
+}
+function browserForward(){
+  const tab = getActiveTab(); if(!tab || tab.histIndex >= tab.history.length - 1) return;
+  tab.histIndex++;
+  const h = tab.history[tab.histIndex];
+  tab.kind = h.kind; tab.url = h.url; tab.title = h.title;
+  renderActiveBrowserTab(true);
+}
+function browserRefresh(){ renderActiveBrowserTab(true); }
+function browserHome(){ browserLoadSite('home'); }
+
+function isBlockedSite(url){
+  try{ const host = new URL(url).hostname.replace('www.',''); return KNOWN_BLOCKED_SITES.some(b => host === b || host.endsWith('.' + b)); }
+  catch(e){ return false; }
+}
+
+function browserLoadSite(key, skipHistory){
+  const tab = getActiveTab(); if(!tab) return;
+  const titles = {youtube:'YouTube', instagram:'Instagram', facebook:'Facebook', tiktok:'TikTok', playstore:'Play Store', home:'New Tab'};
+  tab.kind = key; tab.url = ''; tab.title = titles[key] || key;
+  if(!skipHistory) pushHistory(tab);
+  renderBrowserTabs();
+  renderActiveBrowserTab(true);
+}
+function navigateBrowser(url, skipHistory){
+  const tab = getActiveTab(); if(!tab) return;
+  if(!/^https?:\/\//i.test(url)) url = 'https://' + url;
+  tab.kind = 'url'; tab.url = url; tab.title = new URL(url).hostname.replace('www.','');
+  if(!skipHistory) pushHistory(tab);
+  renderBrowserTabs();
+  renderActiveBrowserTab(true);
+}
+
+function socialCardHtml(name, glyph, url, color, note){
+  return `
+    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; min-height:340px; padding:30px; text-align:center; gap:14px;">
+      <div style="width:74px; height:74px; border-radius:20px; display:flex; align-items:center; justify-content:center; background:${color}22; border:1px solid ${color}55;">
+        <span style="font-size:34px;">${glyph}</span>
+      </div>
+      <div style="font-size:16px; font-weight:600;">${name}</div>
+      <p style="color:var(--text-dim); font-size:12.5px; max-width:320px;">${note}</p>
+      <button class="btn" onclick="window.open('${url}', '_blank')">Open real ${name} &rarr;</button>
+    </div>`;
+}
+
+function playStoreHtml(){
+  const jarvisApps = STORE_APPS.map(a => `
+    <div class="store-item" onclick="minimizeWindow('browser'); openApp('${a.id}')">
+      <div class="glyph">${iconSVG(a.id)}</div>
+      <div class="name">${a.name}</div>
+      <div class="tag">Installed</div>
+    </div>`).join('');
+  const realApps = REAL_APPS.map(a => `
+    <div class="store-item" onclick="window.open('https://play.google.com/store/apps/details?id=${a.pkg}', '_blank')">
+      <div class="glyph"><svg class="neon-svg" viewBox="0 0 24 24" style="width:60%;height:60%;"><path d="M6 8h12l-1 12H7L6 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></div>
+      <div class="name">${a.name}</div>
+      <div class="tag">Get it</div>
+    </div>`).join('');
+  return `
+    <div class="panel" style="padding-bottom:0;">
+      <h3>PLAY STORE</h3>
+      <p style="color:var(--text-dim); font-size:11.5px; margin-top:-6px;">"Jarvis Apps" open instantly inside this OS. "Get Real Apps" opens the genuine Google Play listing in a new tab — a webpage can't silently install real software on your device, so this is the honest, real way to get them.</p>
+      <div style="display:flex; gap:8px; margin:10px 0;">
+        <button class="btn" onclick="showPSTab('jarvis')">Jarvis Apps</button>
+        <button class="btn" onclick="showPSTab('real')">Get Real Apps</button>
       </div>
     </div>
-  `, {width:760, height:540});
+    <div id="psJarvis" class="app-grid" style="padding:0 14px 14px; display:grid; grid-template-columns:repeat(3,1fr); gap:10px; overflow:auto; max-height:320px;">${jarvisApps}</div>
+    <div id="psReal" class="app-grid" style="padding:0 14px 14px; display:none; grid-template-columns:repeat(3,1fr); gap:10px; overflow:auto; max-height:320px;">${realApps}</div>`;
 }
-function navigateBrowser(url){
-  document.getElementById('browserUrl').value = url;
-  loadUrlInFrame(url);
+
+function youtubeHtml(query){
+  const q = query || 'jarvis ai';
+  return `
+    <div style="padding:10px;">
+      <div class="row" style="margin-bottom:8px;">
+        <input class="field" id="ytSearch" placeholder="Search YouTube..." value="${q}" onkeydown="if(event.key==='Enter') ytSearchGo()">
+        <button class="btn" onclick="ytSearchGo()">Search</button>
+      </div>
+      <iframe id="ytFrame" width="100%" height="380" style="border:1px solid rgba(0,217,255,0.25); border-radius:8px;"
+        src="https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(q)}" allowfullscreen></iframe>
+      <p style="color:var(--text-dim); font-size:10.5px; margin-top:6px;">Real, live YouTube search results — genuinely playable, no key required.</p>
+    </div>`;
 }
-function loadUrlInFrame(url){
-  if(!/^https?:\/\//i.test(url)) url = 'https://' + url;
-  document.getElementById('browserContent').innerHTML = `<iframe style="width:100%; height:100%; border:none; background:#fff;" src="${url}" onerror="this.parentElement.innerHTML='<div class=\\'search-results\\'>This site refused to load inside Jarvis OS (blocked by its own security policy). <a href=\\'${url}\\' target=\\'_blank\\' style=\\'color:var(--accent)\\'>Open it in a new tab instead &rarr;</a></div>'"></iframe>`;
+function ytSearchGo(){
+  const q = document.getElementById('ytSearch').value;
+  const f = document.getElementById('ytFrame');
+  if(f) f.src = 'https://www.youtube.com/embed?listType=search&list=' + encodeURIComponent(q);
 }
+
+function homeHtml(){
+  return `<div class="search-results" style="color:var(--text-dim); font-size:12.5px; padding:16px;">Type a search term and hit Go — real results from Wikipedia + DuckDuckGo. Paste a direct URL to load the page. Or pick a bookmark above — YouTube, Instagram, Facebook, TikTok and Play Store all open right here in the browser.</div>`;
+}
+
+function renderActiveBrowserTab(){
+  const tab = getActiveTab(); if(!tab) return;
+  const urlField = document.getElementById('browserUrl');
+  const content = document.getElementById('browserContent');
+  if(!content) return;
+  if(urlField) urlField.value = tab.kind === 'url' ? tab.url : '';
+  if(tab.kind === 'home') content.innerHTML = homeHtml();
+  else if(tab.kind === 'youtube') content.innerHTML = youtubeHtml();
+  else if(tab.kind === 'instagram') content.innerHTML = socialCardHtml('Instagram', '&#128248;', 'https://www.instagram.com', '#E1306C', 'Instagram blocks being embedded inside other apps/pages (their own security policy) — tap below to open the real, live app in a new tab.');
+  else if(tab.kind === 'facebook') content.innerHTML = socialCardHtml('Facebook', '&#128075;', 'https://www.facebook.com', '#1877F2', 'Facebook blocks being embedded inside other apps/pages (their own security policy) — tap below to open the real, live app in a new tab.');
+  else if(tab.kind === 'tiktok') content.innerHTML = socialCardHtml('TikTok', '&#127925;', 'https://www.tiktok.com', '#25F4EE', 'TikTok blocks being embedded inside other apps/pages (their own security policy) — tap below to open the real, live app in a new tab.');
+  else if(tab.kind === 'playstore') content.innerHTML = playStoreHtml();
+  else if(tab.kind === 'url'){
+    if(isBlockedSite(tab.url)){
+      const host = new URL(tab.url).hostname.replace('www.','');
+      content.innerHTML = socialCardHtml(host, '&#127760;', tab.url, '#00d9ff', `${host} blocks embedding inside other pages (its own security policy) — tap below to open it directly in a new tab.`);
+    } else {
+      content.innerHTML = `<iframe style="width:100%; height:100%; border:none; background:#fff;" src="${tab.url}"></iframe>`;
+    }
+  }
+  else if(tab.kind === 'search') content.innerHTML = tab.searchHtml || '';
+}
+
 async function smartGo(){
   const raw = document.getElementById('browserUrl').value.trim();
   if(!raw) return;
   const looksLikeUrl = /^(https?:\/\/)?[\w.-]+\.[a-z]{2,}(\/.*)?$/i.test(raw) && !raw.includes(' ');
   if(looksLikeUrl){
-    loadUrlInFrame(raw);
+    navigateBrowser(raw);
     return;
   }
+  const tab = getActiveTab(); if(!tab) return;
   const content = document.getElementById('browserContent');
   content.innerHTML = '<div class="search-results">Searching...</div>';
   let html = '';
@@ -481,7 +657,7 @@ async function smartGo(){
     }
     if(ddg.RelatedTopics && ddg.RelatedTopics.length){
       ddg.RelatedTopics.slice(0,6).forEach(t=>{
-        if(t.Text){ html += `<div class="search-result"><div class="title" onclick="loadUrlInFrame('${t.FirstURL}')">${t.Text.split(' - ')[0]}</div><div class="snippet">${t.Text}</div></div>`; }
+        if(t.Text){ html += `<div class="search-result"><div class="title" onclick="navigateBrowser('${t.FirstURL}')">${t.Text.split(' - ')[0]}</div><div class="snippet">${t.Text}</div></div>`; }
       });
     }
   }catch(e){}
@@ -489,13 +665,16 @@ async function smartGo(){
     const wiki = await fetch(`https://en.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(raw)}&limit=6&format=json&origin=*`).then(r=>r.json());
     const [,titles,descs,links] = wiki;
     titles.forEach((t,i)=>{
-      html += `<div class="search-result"><div class="title" onclick="loadUrlInFrame('${links[i]}')">${t} <span style="color:var(--text-dim); font-size:10px;">(Wikipedia)</span></div><div class="snippet">${descs[i]||''}</div></div>`;
+      html += `<div class="search-result"><div class="title" onclick="navigateBrowser('${links[i]}')">${t} <span style="color:var(--text-dim); font-size:10px;">(Wikipedia)</span></div><div class="snippet">${descs[i]||''}</div></div>`;
     });
   }catch(e){}
   if(!html){
-    html = `<div class="search-results">No instant results found. <a href="#" onclick="loadUrlInFrame('https://duckduckgo.com/?q=${encodeURIComponent(raw)}'); return false;" style="color:var(--accent)">Try opening full search results &rarr;</a></div>`;
+    html = `<div class="search-results">No instant results found. <a href="#" onclick="navigateBrowser('https://duckduckgo.com/?q=${encodeURIComponent(raw)}'); return false;" style="color:var(--accent)">Try opening full search results &rarr;</a></div>`;
   }
-  content.innerHTML = '<div class="search-results">' + html + '</div>';
+  tab.kind = 'search'; tab.title = raw.slice(0,18); tab.searchHtml = '<div class="search-results">' + html + '</div>';
+  pushHistory(tab);
+  renderBrowserTabs();
+  content.innerHTML = tab.searchHtml;
 }
 
 /* ---------------- EXPANDED SETTINGS ---------------- */
@@ -826,7 +1005,9 @@ function initHud(){
   const titleEl = document.getElementById('greetTitle');
   const dateEl = document.getElementById('greetDate');
   const subEl = document.getElementById('greetSub');
-  if(titleEl) titleEl.textContent = `${greetWord}, Stark.`;
+  const acc = (typeof getStoredAccount==='function') ? getStoredAccount() : null;
+  const firstName = (acc && acc.name) ? acc.name.split(' ')[0] : 'Stark';
+  if(titleEl) titleEl.textContent = `${greetWord}, ${firstName}.`;
   if(dateEl) dateEl.textContent = new Date().toLocaleString('en-US', { weekday:'long', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
   if(subEl) subEl.textContent = 'All systems nominal.';
 
@@ -1084,20 +1265,7 @@ function openNews(){
 /* ================= NEW APPS: YouTube, Facebook, Instagram, TikTok, Play Store ================= */
 
 /* ---------------- YOUTUBE (real embedded search player, no API key needed) ---------------- */
-function openYouTube(q){
-  const query = q || 'jarvis ai';
-  createWindow('youtube', 'YouTube', '&#9654;', `
-    <div style="padding:10px;">
-      <div class="row" style="margin-bottom:8px;">
-        <input class="field" id="ytSearch" placeholder="Search YouTube..." value="${query}">
-        <button class="btn" onclick="ytSearchGo()">Search</button>
-      </div>
-      <iframe id="ytFrame" width="100%" height="330" style="border:1px solid rgba(0,217,255,0.25); border-radius:8px;"
-        src="https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(query)}" allowfullscreen></iframe>
-      <p style="color:var(--text-dim); font-size:10.5px; margin-top:6px;">Real, live YouTube search results — genuinely playable, no key required.</p>
-    </div>
-  `, {width:520, height:460});
-}
+function openYouTube(q){ openBrowser(); browserLoadSite('youtube'); }
 function ytSearchGo(){
   const q = document.getElementById('ytSearch').value;
   const f = document.getElementById('ytFrame');
@@ -1117,9 +1285,9 @@ function socialLauncher(id, name, glyph, url, color){
     </div>
   `, {width:360, height:320});
 }
-function openFacebook(){ socialLauncher('facebook', 'Facebook', '&#128075;', 'https://www.facebook.com', '#1877F2'); }
-function openInstagram(){ socialLauncher('instagram', 'Instagram', '&#128248;', 'https://www.instagram.com', '#E1306C'); }
-function openTiktok(){ socialLauncher('tiktok', 'TikTok', '&#127925;', 'https://www.tiktok.com', '#25F4EE'); }
+function openFacebook(){ openBrowser(); browserLoadSite('facebook'); }
+function openInstagram(){ openBrowser(); browserLoadSite('instagram'); }
+function openTiktok(){ openBrowser(); browserLoadSite('tiktok'); }
 
 /* ---------------- PLAY STORE (in-OS app catalog + real deep links to actual app store listings) ---------------- */
 const REAL_APPS = [
@@ -1133,32 +1301,8 @@ const REAL_APPS = [
   {name:'Gmail', pkg:'com.google.android.gm'},
   {name:'Google Chrome', pkg:'com.android.chrome'},
 ];
-function openPlayStore(){
-  const jarvisApps = STORE_APPS.map(a => `
-    <div class="store-item" onclick="closeWindow('playstore'); openApp('${a.id}')">
-      <div class="glyph">${iconSVG(a.id)}</div>
-      <div class="name">${a.name}</div>
-      <div class="tag">Installed</div>
-    </div>`).join('');
-  const realApps = REAL_APPS.map(a => `
-    <div class="store-item" onclick="window.open('https://play.google.com/store/apps/details?id=${a.pkg}', '_blank')">
-      <div class="glyph"><svg class="neon-svg" viewBox="0 0 24 24" style="width:60%;height:60%;"><path d="M6 8h12l-1 12H7L6 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></div>
-      <div class="name">${a.name}</div>
-      <div class="tag">Get it</div>
-    </div>`).join('');
-  createWindow('playstore', 'Play Store', '&#128230;', `
-    <div class="panel" style="padding-bottom:0;">
-      <h3>PLAY STORE</h3>
-      <p style="color:var(--text-dim); font-size:11.5px; margin-top:-6px;">"Jarvis Apps" open instantly inside this OS. "Get Real Apps" opens the genuine Google Play listing in a new tab — a webpage can't silently install real software on your device, so this is the honest, real way to get them.</p>
-      <div style="display:flex; gap:8px; margin:10px 0;">
-        <button class="btn" onclick="showPSTab('jarvis')">Jarvis Apps</button>
-        <button class="btn" onclick="showPSTab('real')">Get Real Apps</button>
-      </div>
-    </div>
-    <div id="psJarvis" class="app-grid" style="padding:0 14px 14px; display:grid; grid-template-columns:repeat(3,1fr); gap:10px; overflow:auto; max-height:320px;">${jarvisApps}</div>
-    <div id="psReal" class="app-grid" style="padding:0 14px 14px; display:none; grid-template-columns:repeat(3,1fr); gap:10px; overflow:auto; max-height:320px;">${realApps}</div>
-  `, {width:520, height:500});
-}
+function openPlayStore(){ openBrowser(); browserLoadSite('playstore'); }
+
 function showPSTab(tab){
   const j = document.getElementById('psJarvis'), r = document.getElementById('psReal');
   if(j) j.style.display = tab==='jarvis' ? 'grid' : 'none';
