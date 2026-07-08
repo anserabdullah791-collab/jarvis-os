@@ -26,7 +26,12 @@ const ICONS = {
   maps: `<path d="M12 21s7-7.5 7-12a7 7 0 1 0-14 0c0 4.5 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/>`,
   news: `<rect x="3" y="5" width="14" height="15" rx="1"/><path d="M7 9h6M7 12h6M7 15h4M17 8h4v9a2 2 0 0 1-2 2h-2"/>`,
   chat: `<path d="M4 5h16v10H8l-4 4V5z"/><circle cx="8" cy="10" r=".8"/><circle cx="12" cy="10" r=".8"/><circle cx="16" cy="10" r=".8"/>`,
-  store: `<path d="M6 8h12l-1 12H7L6 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>`
+  store: `<path d="M6 8h12l-1 12H7L6 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>`,
+  youtube: `<rect x="2" y="6" width="20" height="12" rx="4"/><path d="M10 9.5l6 2.5-6 2.5z"/>`,
+  facebook: `<path d="M14 21v-8h3l.5-4H14V7c0-1.1.5-2 2-2h1.5V1.3C17 1.2 15.9 1 14.7 1 12 1 10 2.7 10 5.6V9H7v4h3v8z"/>`,
+  instagram: `<rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="0.9"/>`,
+  tiktok: `<path d="M14 3v10.2a3.3 3.3 0 1 1-3-3.3"/><path d="M14 3c0 2.8 2 5 5 5"/>`,
+  playstore: `<path d="M6 8h12l-1 12H7L6 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>`
 };
 function iconSVG(id, size){
   const path = ICONS[id] || '<circle cx="12" cy="12" r="8"/>';
@@ -75,6 +80,11 @@ const STORE_APPS = [
   {id:'cloud', glyph:'&#9729;', name:'Cloud', tag:'New'},
   {id:'maps', glyph:'&#128506;', name:'Maps', tag:'New'},
   {id:'news', glyph:'&#128240;', name:'News', tag:'New'},
+  {id:'youtube', glyph:'&#9654;', name:'YouTube', tag:'New'},
+  {id:'facebook', glyph:'&#128075;', name:'Facebook', tag:'New'},
+  {id:'instagram', glyph:'&#128248;', name:'Instagram', tag:'New'},
+  {id:'tiktok', glyph:'&#127925;', name:'TikTok', tag:'New'},
+  {id:'playstore', glyph:'&#128230;', name:'Play Store', tag:'New'},
 ];
 
 function openStore(){
@@ -103,13 +113,19 @@ let selectedVoice = null;
 function openVoice(){
   createWindow('voice', 'Voice Assistant', '&#127908;', `
     <div class="panel">
-      <h3>JARVIS VOICE</h3>
-      <p style="color:var(--text-dim); font-size:12px;">Real speech recognition + text-to-speech, running in your browser. Works best in Chrome/Edge (desktop or Android).</p>
-      <div style="display:flex; flex-direction:column; align-items:center; gap:14px; margin:18px 0;">
-        <button class="mic-btn" id="micBtn" onclick="toggleListening()">&#127908;</button>
-        <div style="font-size:11px; color:var(--text-dim);" id="micStatus">Tap to speak a command</div>
+      <h3>JARVIS VOICE — WAKE WORD</h3>
+      <p style="color:var(--text-dim); font-size:12px;">Say "Hey Jarvis" any time this tab is open and focused, then speak your command. Real browser speech recognition + text-to-speech — works best in Chrome/Edge.</p>
+      <div style="display:flex; flex-direction:column; align-items:center; gap:10px; margin:16px 0;">
+        <div class="jarvis-orb-lg" id="voiceOrb"><div class="orb-ring"></div><div class="orb-core"></div></div>
+        <div style="font-size:12px; color:var(--accent);" id="wakeStatus">Wake word: OFF</div>
+        <button class="btn" id="wakeToggleBtn" onclick="toggleWakeWord()">Enable "Hey Jarvis"</button>
       </div>
-      <div class="transcript" id="voiceTranscript">Say things like: "open terminal", "open calculator", "what time is it", "tell me a joke".</div>
+      <div style="display:flex; flex-direction:column; align-items:center; gap:10px; margin:14px 0;">
+        <button class="mic-btn" id="micBtn" onclick="toggleListening()">&#127908;</button>
+        <div style="font-size:11px; color:var(--text-dim);" id="micStatus">Or tap to speak a command right now</div>
+      </div>
+      <div class="transcript" id="voiceTranscript">Try: "open youtube", "open calculator", "what's the weather", "read the news", "what time is it", "lock the screen", "tell me a joke".</div>
+      <p style="color:var(--text-dim); font-size:11px; margin-top:8px;">Note: for real private actions — reading your Gmail, sending messages, checking your calendar — message Jarvis on WhatsApp. This in-browser voice brain runs locally for safety since this page is public.</p>
       <h3 style="margin-top:20px;">VOICE SETTINGS</h3>
       <div class="row" style="margin-bottom:10px;">
         <select class="field" id="voiceSelect" onchange="setVoice(this.value)"></select>
@@ -121,8 +137,9 @@ function openVoice(){
         <button class="btn" onclick="speakText()">Speak</button>
       </div>
     </div>
-  `, {width:460, height:560});
+  `, {width:460, height:660});
   setTimeout(populateVoices, 200);
+  setTimeout(()=>{ const s=document.getElementById('wakeStatus'); if(s) s.textContent = wakeWordEnabled ? 'Wake word: ON — listening for "Hey Jarvis"' : 'Wake word: OFF'; }, 50);
 }
 
 function populateVoices(){
@@ -141,16 +158,30 @@ function setVoice(idx){
   const voices = speechSynthesis.getVoices();
   selectedVoice = voices[idx] || null;
 }
-function speakText(){
-  if(!('speechSynthesis' in window)){ alert('Speech synthesis not supported in this browser.'); return; }
-  const text = document.getElementById('ttsText').value;
-  const u = new SpeechSynthesisUtterance(text);
+function speakText(text){
+  if(!('speechSynthesis' in window)) return;
+  const say = text !== undefined ? text : document.getElementById('ttsText').value;
+  const u = new SpeechSynthesisUtterance(say);
   if(selectedVoice) u.voice = selectedVoice;
-  u.rate = parseFloat(document.getElementById('voiceRate').value);
-  u.pitch = parseFloat(document.getElementById('voicePitch').value);
+  const rateEl = document.getElementById('voiceRate');
+  const pitchEl = document.getElementById('voicePitch');
+  u.rate = rateEl ? parseFloat(rateEl.value) : 1;
+  u.pitch = pitchEl ? parseFloat(pitchEl.value) : 1;
+  u.onstart = () => setOrbState('speaking');
+  u.onend = () => setOrbState(wakeWordEnabled ? 'wake-idle' : 'idle');
   speechSynthesis.cancel();
   speechSynthesis.speak(u);
 }
+function setOrbState(state){
+  ['voiceOrb'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.className = 'jarvis-orb-lg orb-' + state;
+    el.innerHTML = '<div class="orb-ring"></div><div class="orb-core"></div>';
+  });
+}
+
+/* ---------------- MANUAL TAP-TO-SPEAK ---------------- */
 function toggleListening(){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if(!SR){
@@ -163,9 +194,10 @@ function toggleListening(){
     recognition && recognition.stop();
     voiceListening = false;
     btn.classList.remove('listening');
-    status.textContent = 'Tap to speak a command';
+    status.textContent = 'Or tap to speak a command right now';
     return;
   }
+  if(wakeWordEnabled) stopWakeWordEngine(true);
   recognition = new SR();
   recognition.lang = 'en-US';
   recognition.interimResults = false;
@@ -175,37 +207,171 @@ function toggleListening(){
     handleVoiceCommand(said.toLowerCase());
   };
   recognition.onerror = (e) => { status.textContent = 'Mic error: ' + e.error; };
-  recognition.onend = () => { voiceListening = false; btn.classList.remove('listening'); status.textContent = 'Tap to speak a command'; };
+  recognition.onend = () => {
+    voiceListening = false; btn.classList.remove('listening'); status.textContent = 'Or tap to speak a command right now';
+    if(wakeWordEnabled) setTimeout(startWakeWordEngine, 500);
+  };
   recognition.start();
   voiceListening = true;
   btn.classList.add('listening');
   status.textContent = 'Listening...';
+  setOrbState('listening');
+}
+
+/* ---------------- WAKE WORD ENGINE ("Hey Jarvis") ---------------- */
+let wakeWordEnabled = false;
+let wakeRecognition = null;
+let wakeRestarting = false;
+
+function toggleWakeWord(){
+  if(wakeWordEnabled) stopWakeWordEngine(); else startWakeWordEngine();
+}
+function startWakeWordEngine(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){ alert('Wake-word listening needs Chrome or Edge (desktop or Android).'); return; }
+  wakeWordEnabled = true;
+  const btn = document.getElementById('wakeToggleBtn');
+  const status = document.getElementById('wakeStatus');
+  if(btn) btn.textContent = 'Disable "Hey Jarvis"';
+  if(status) status.textContent = 'Wake word: ON — listening for "Hey Jarvis"';
+  setOrbState('wake-idle');
+  runWakeRecognition();
+}
+function runWakeRecognition(){
+  if(!wakeWordEnabled) return;
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  wakeRecognition = new SR();
+  wakeRecognition.lang = 'en-US';
+  wakeRecognition.continuous = true;
+  wakeRecognition.interimResults = true;
+  wakeRecognition.onresult = (e) => {
+    const last = e.results[e.results.length-1];
+    const said = last[0].transcript.toLowerCase();
+    if(said.includes('hey jarvis') || said.includes('hey, jarvis') || said.includes('a jarvis') || said.includes('hey jervis')){
+      wakeRecognition.stop();
+      onWakeWordDetected();
+    }
+  };
+  wakeRecognition.onerror = () => {}; // swallow — restarts on end
+  wakeRecognition.onend = () => {
+    if(wakeWordEnabled && !wakeRestarting) setTimeout(()=>{ if(wakeWordEnabled) runWakeRecognition(); }, 300);
+  };
+  try{ wakeRecognition.start(); }catch(e){}
+}
+function stopWakeWordEngine(silent){
+  wakeWordEnabled = false;
+  if(wakeRecognition){ try{ wakeRecognition.stop(); }catch(e){} }
+  const btn = document.getElementById('wakeToggleBtn');
+  const status = document.getElementById('wakeStatus');
+  if(btn) btn.textContent = 'Enable "Hey Jarvis"';
+  if(status && !silent) status.textContent = 'Wake word: OFF';
+  setOrbState('idle');
+}
+function onWakeWordDetected(){
+  setOrbState('active');
+  speakText('Yes?');
+  wakeRestarting = true;
+  setTimeout(()=>{
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const cmdRec = new SR();
+    cmdRec.lang = 'en-US';
+    cmdRec.interimResults = false;
+    cmdRec.onresult = (e) => {
+      const said = e.results[0][0].transcript;
+      const t = document.getElementById('voiceTranscript'); if(t) t.textContent = '"' + said + '"';
+      handleVoiceCommand(said.toLowerCase());
+    };
+    cmdRec.onerror = () => { setOrbState('wake-idle'); };
+    cmdRec.onend = () => {
+      wakeRestarting = false;
+      setOrbState('wake-idle');
+      if(wakeWordEnabled) setTimeout(runWakeRecognition, 400);
+    };
+    try{ cmdRec.start(); }catch(e){ wakeRestarting = false; if(wakeWordEnabled) runWakeRecognition(); }
+  }, 900);
+}
+
+/* ---------------- VOICE COMMAND BRAIN ---------------- */
+function safeMath(expr){
+  if(!/^[0-9+\-*/(). %]+$/.test(expr)) return null;
+  try{ return Function('"use strict";return (' + expr + ')')(); }catch(e){ return null; }
+}
+async function fetchWeatherReply(){
+  try{
+    const r = await fetch('https://api.open-meteo.com/v1/forecast?latitude=32.3557&longitude=73.0124&current=temperature_2m,weather_code&timezone=Asia%2FKarachi');
+    const j = await r.json();
+    const t = Math.round(j.current.temperature_2m);
+    return `It's currently ${t} degrees Celsius in Phularwan.`;
+  }catch(e){ return "I couldn't reach the weather service right now."; }
+}
+async function fetchNewsReply(){
+  try{
+    const ids = await (await fetch('https://hacker-news.firebaseio.com/v0/topstories.json')).json();
+    const top3 = await Promise.all(ids.slice(0,3).map(id=>fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`).then(r=>r.json())));
+    return 'Top headlines: ' + top3.map(i=>i.title).join('. ');
+  }catch(e){ return "I couldn't reach the news service right now."; }
 }
 function handleVoiceCommand(cmd){
-  let reply = "I heard you, but I'm not sure what to do with that yet.";
-  const openMatch = cmd.match(/open (\w+)/);
-  if(openMatch && STORE_APPS.find(a=>a.id===openMatch[1] || a.name.toLowerCase().includes(openMatch[1]))){
-    const app = STORE_APPS.find(a=>a.id===openMatch[1] || a.name.toLowerCase().includes(openMatch[1]));
-    openApp(app.id);
-    reply = 'Opening ' + app.name;
+  let reply = null;
+  const say = (r) => { reply = r; finishVoiceReply(r); };
+
+  const openMatch = cmd.match(/open (?:the )?(\w+)/) || cmd.match(/launch (?:the )?(\w+)/);
+  const foundApp = openMatch && STORE_APPS.find(a=>a.id===openMatch[1] || a.name.toLowerCase().includes(openMatch[1]));
+
+  if(foundApp){
+    openApp(foundApp.id);
+    say('Opening ' + foundApp.name + '.');
+  } else if(cmd.includes('weather')){
+    setOrbState('active');
+    fetchWeatherReply().then(say);
+    return;
+  } else if(cmd.includes('news') || cmd.includes('headline')){
+    setOrbState('active');
+    fetchNewsReply().then(say);
+    return;
+  } else if(cmd.includes('lock')){
+    say('Locking the screen now.');
+    setTimeout(lockNow, 1200);
+  } else if(cmd.match(/search (for )?(.+)/)){
+    const q = cmd.match(/search (?:for )?(.+)/)[1];
+    openApp('browser');
+    say('Searching for ' + q);
+  } else if(cmd.match(/(calculate|what is|what's) ([0-9+\-*/(). %]+)/)){
+    const expr = cmd.match(/(calculate|what is|what's) ([0-9+\-*/(). %]+)/)[2];
+    const result = safeMath(expr);
+    say(result !== null ? `${expr.trim()} equals ${result}.` : "I couldn't calculate that.");
   } else if(cmd.includes('time')){
-    reply = 'It is ' + new Date().toLocaleTimeString();
-  } else if(cmd.includes('date')){
-    reply = 'Today is ' + new Date().toDateString();
+    say('It is ' + new Date().toLocaleTimeString() + '.');
+  } else if(cmd.includes('date') || cmd.includes('day is it')){
+    say('Today is ' + new Date().toDateString() + '.');
+  } else if(cmd.includes('battery')){
+    if(navigator.getBattery){
+      navigator.getBattery().then(b => say(`Battery is at ${Math.round(b.level*100)} percent${b.charging?', charging':''}.`));
+    } else { say("I can't read battery status on this device."); }
+    return;
   } else if(cmd.includes('joke')){
-    reply = "Why do programmers prefer dark mode? Because light attracts bugs.";
+    say("Why do programmers prefer dark mode? Because light attracts bugs.");
   } else if(cmd.includes('your name') || cmd.includes('who are you')){
-    reply = "I'm Jarvis — your personal AI, running right here in this browser.";
-  } else if(cmd.includes('run ')){
-    const runCmd = cmd.split('run ')[1];
+    say("I'm Jarvis — your personal AI, running right here in this browser.");
+  } else if(cmd.includes('hello') || cmd.includes('hi jarvis')){
+    say("Hello, Abdullah. How can I help?");
+  } else if(cmd.includes('thank')){
+    say("Anytime.");
+  } else if(cmd.includes('help') || cmd.includes('what can you do')){
+    say("I can open any app, tell you the time, weather, or news, do quick math, search the browser, or lock the screen. For real email, calendar, or messaging, talk to me on WhatsApp.");
+  } else if(cmd.match(/run (.+)/)){
+    const runCmd = cmd.match(/run (.+)/)[1];
     openApp('terminal');
     setTimeout(()=>{ if(document.getElementById('termInput')) runTermCommand(runCmd); }, 300);
-    reply = 'Running: ' + runCmd;
+    say('Running: ' + runCmd);
+  } else {
+    say("I heard you, but I'm not sure what to do with that yet. Say 'help' to hear what I can do.");
   }
-  const u = new SpeechSynthesisUtterance(reply);
-  if(selectedVoice) u.voice = selectedVoice;
-  speechSynthesis.speak(u);
-  document.getElementById('voiceTranscript').textContent += '\\n\\nJarvis: ' + reply;
+}
+function finishVoiceReply(reply){
+  speakText(reply);
+  const t = document.getElementById('voiceTranscript');
+  if(t) t.textContent += '\n\nJarvis: ' + reply;
 }
 
 /* ---------------- SCREENSHOT ---------------- */
@@ -912,4 +1078,89 @@ function openNews(){
         </div>`).join('');
     })
     .catch(()=>{ const el = document.getElementById('newsList'); if(el) el.textContent = 'Could not reach the news API right now.'; });
+}
+
+
+/* ================= NEW APPS: YouTube, Facebook, Instagram, TikTok, Play Store ================= */
+
+/* ---------------- YOUTUBE (real embedded search player, no API key needed) ---------------- */
+function openYouTube(q){
+  const query = q || 'jarvis ai';
+  createWindow('youtube', 'YouTube', '&#9654;', `
+    <div style="padding:10px;">
+      <div class="row" style="margin-bottom:8px;">
+        <input class="field" id="ytSearch" placeholder="Search YouTube..." value="${query}">
+        <button class="btn" onclick="ytSearchGo()">Search</button>
+      </div>
+      <iframe id="ytFrame" width="100%" height="330" style="border:1px solid rgba(0,217,255,0.25); border-radius:8px;"
+        src="https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(query)}" allowfullscreen></iframe>
+      <p style="color:var(--text-dim); font-size:10.5px; margin-top:6px;">Real, live YouTube search results — genuinely playable, no key required.</p>
+    </div>
+  `, {width:520, height:460});
+}
+function ytSearchGo(){
+  const q = document.getElementById('ytSearch').value;
+  const f = document.getElementById('ytFrame');
+  if(f) f.src = 'https://www.youtube.com/embed?listType=search&list=' + encodeURIComponent(q);
+}
+
+/* ---------------- FACEBOOK / INSTAGRAM / TIKTOK (real launcher — these platforms block iframe embedding) ---------------- */
+function socialLauncher(id, name, glyph, url, color){
+  createWindow(id, name, glyph, `
+    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; padding:24px; text-align:center; gap:14px;">
+      <div style="width:70px; height:70px; border-radius:20px; display:flex; align-items:center; justify-content:center; background:${color}22; border:1px solid ${color}55;">
+        <span style="font-size:32px;">${glyph}</span>
+      </div>
+      <div style="font-size:15px; font-weight:600;">${name}</div>
+      <p style="color:var(--text-dim); font-size:12px; max-width:280px;">${name} blocks being embedded inside other apps/pages (their own security policy) — so tapping below opens the real, live ${name} in a new tab.</p>
+      <button class="btn" onclick="window.open('${url}', '_blank')">Open ${name}</button>
+    </div>
+  `, {width:360, height:320});
+}
+function openFacebook(){ socialLauncher('facebook', 'Facebook', '&#128075;', 'https://www.facebook.com', '#1877F2'); }
+function openInstagram(){ socialLauncher('instagram', 'Instagram', '&#128248;', 'https://www.instagram.com', '#E1306C'); }
+function openTiktok(){ socialLauncher('tiktok', 'TikTok', '&#127925;', 'https://www.tiktok.com', '#25F4EE'); }
+
+/* ---------------- PLAY STORE (in-OS app catalog + real deep links to actual app store listings) ---------------- */
+const REAL_APPS = [
+  {name:'WhatsApp', pkg:'com.whatsapp'},
+  {name:'Instagram', pkg:'com.instagram.android'},
+  {name:'TikTok', pkg:'com.zhiliaoapp.musically'},
+  {name:'Facebook', pkg:'com.facebook.katana'},
+  {name:'YouTube', pkg:'com.google.android.youtube'},
+  {name:'Spotify', pkg:'com.spotify.music'},
+  {name:'Netflix', pkg:'com.netflix.mediaclient'},
+  {name:'Gmail', pkg:'com.google.android.gm'},
+  {name:'Google Chrome', pkg:'com.android.chrome'},
+];
+function openPlayStore(){
+  const jarvisApps = STORE_APPS.map(a => `
+    <div class="store-item" onclick="closeWindow('playstore'); openApp('${a.id}')">
+      <div class="glyph">${iconSVG(a.id)}</div>
+      <div class="name">${a.name}</div>
+      <div class="tag">Installed</div>
+    </div>`).join('');
+  const realApps = REAL_APPS.map(a => `
+    <div class="store-item" onclick="window.open('https://play.google.com/store/apps/details?id=${a.pkg}', '_blank')">
+      <div class="glyph"><svg class="neon-svg" viewBox="0 0 24 24" style="width:60%;height:60%;"><path d="M6 8h12l-1 12H7L6 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></div>
+      <div class="name">${a.name}</div>
+      <div class="tag">Get it</div>
+    </div>`).join('');
+  createWindow('playstore', 'Play Store', '&#128230;', `
+    <div class="panel" style="padding-bottom:0;">
+      <h3>PLAY STORE</h3>
+      <p style="color:var(--text-dim); font-size:11.5px; margin-top:-6px;">"Jarvis Apps" open instantly inside this OS. "Get Real Apps" opens the genuine Google Play listing in a new tab — a webpage can't silently install real software on your device, so this is the honest, real way to get them.</p>
+      <div style="display:flex; gap:8px; margin:10px 0;">
+        <button class="btn" onclick="showPSTab('jarvis')">Jarvis Apps</button>
+        <button class="btn" onclick="showPSTab('real')">Get Real Apps</button>
+      </div>
+    </div>
+    <div id="psJarvis" class="app-grid" style="padding:0 14px 14px; display:grid; grid-template-columns:repeat(3,1fr); gap:10px; overflow:auto; max-height:320px;">${jarvisApps}</div>
+    <div id="psReal" class="app-grid" style="padding:0 14px 14px; display:none; grid-template-columns:repeat(3,1fr); gap:10px; overflow:auto; max-height:320px;">${realApps}</div>
+  `, {width:520, height:500});
+}
+function showPSTab(tab){
+  const j = document.getElementById('psJarvis'), r = document.getElementById('psReal');
+  if(j) j.style.display = tab==='jarvis' ? 'grid' : 'none';
+  if(r) r.style.display = tab==='real' ? 'grid' : 'none';
 }
