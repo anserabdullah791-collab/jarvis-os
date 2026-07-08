@@ -664,4 +664,5 @@ function initHud(){
 function setEl(id, text){ const el = document.getElementById(id); if(el) el.textContent = text; }
 function setBar(id, pct){ const el = document.getElementById(id); if(el) el.style.width = Math.max(4,Math.min(100,pct)) + '%'; }
 
-window.addEventListener('load', () => { setTimeout(initHud, 3600); });
+initHud();
+window.addEventListener('load', () => { setTimeout(initHud, 500); });
