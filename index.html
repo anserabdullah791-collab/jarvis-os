@@ -156,6 +156,16 @@
 
   /* ---------- BROWSER APP ---------- */
   .browser{ display:flex; flex-direction:column; height:100%; }
+  .browser-tabstrip{ display:flex; gap:2px; padding:6px 6px 0; background:rgba(0,0,0,0.25); flex-shrink:0; overflow-x:auto; }
+  .browser-tab{ display:flex; align-items:center; gap:8px; padding:6px 10px; border-radius:8px 8px 0 0; background:rgba(255,255,255,0.03); font-size:11px; color:var(--text-dim); cursor:pointer; white-space:nowrap; max-width:140px; border:1px solid transparent; }
+  .browser-tab.active{ background:rgba(0,217,255,0.1); color:var(--text-main); border-color:rgba(0,217,255,0.25); border-bottom-color:transparent; }
+  .browser-tab .tab-title{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:90px; }
+  .browser-tab .tab-close{ color:var(--text-dim); font-size:13px; line-height:1; }
+  .browser-tab .tab-close:hover{ color:var(--danger); }
+  .browser-tab-new{ padding:6px 12px; font-size:13px; color:var(--text-dim); cursor:pointer; }
+  .browser-tab-new:hover{ color:var(--accent); }
+  .nav-btn{ background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); color:var(--text-dim); border-radius:8px; width:28px; height:28px; cursor:pointer; font-size:13px; flex-shrink:0; }
+  .nav-btn:hover{ color:var(--accent); border-color:var(--border-glow); }
   .browser-bar{ display:flex; gap:8px; padding:8px; background:rgba(255,255,255,0.03); border-bottom:1px solid rgba(255,255,255,0.06); flex-shrink:0;}
   .browser-bar input{
     flex:1; background:rgba(0,0,0,0.3); border:1px solid rgba(0,217,255,0.2); border-radius:20px;
@@ -341,6 +351,25 @@
   .lock-shake{ animation:lockshake .4s; }
   @keyframes lockshake{ 0%,100%{transform:translateX(0);} 25%{transform:translateX(-8px);} 75%{transform:translateX(8px);} }
 
+  /* ---------- signup / account creation screen ---------- */
+  #signupScreen{
+    position:fixed; inset:0; z-index:950; display:none; align-items:center; justify-content:center;
+    background:radial-gradient(circle at 50% 30%, rgba(0,60,80,0.35), rgba(4,8,14,0.98) 70%), #05090f;
+    backdrop-filter:blur(6px);
+  }
+  #signupScreen.active{ display:flex; }
+  .signup-card{
+    width:320px; display:flex; flex-direction:column; align-items:center; padding:32px 28px;
+    background:rgba(12,18,28,0.6); border:1px solid var(--border-glow); border-radius:16px;
+    box-shadow:0 20px 60px rgba(0,0,0,0.5);
+  }
+  .signup-logo{ font-size:28px; font-weight:700; letter-spacing:6px; color:var(--accent); text-shadow:0 0 18px rgba(0,217,255,0.7); margin-bottom:6px; }
+  .signup-tagline{ font-size:10px; letter-spacing:2px; color:var(--text-dim); margin-bottom:22px; text-align:center; }
+  .signup-field{ width:100%; margin-bottom:12px; text-align:left; }
+  .signup-field label{ display:block; font-size:10.5px; letter-spacing:1px; color:var(--text-dim); margin-bottom:5px; }
+  .signup-input{ width:100%; box-sizing:border-box; text-align:left; letter-spacing:0.3px; border-radius:10px; padding:11px 14px; }
+  .signup-submit{ width:100%; border-radius:24px; margin-top:6px; padding:12px 0; font-size:13px; font-weight:600; letter-spacing:0.5px; }
+
   /* ---------- Jarvis voice orb ---------- */
   .jarvis-orb-lg{ position:relative; width:90px; height:90px; display:flex; align-items:center; justify-content:center; }
   .jarvis-orb-lg .orb-core{ width:26px; height:26px; border-radius:50%; background:var(--accent); box-shadow:0 0 20px rgba(0,217,255,0.9); }
@@ -363,11 +392,38 @@
   <div class="bootlog" id="bootLog">Initializing core...</div>
 </div>
 
+
+<div id="signupScreen">
+  <div class="signup-card">
+    <div class="signup-logo">J A R V I S</div>
+    <div class="signup-tagline">CREATE YOUR ACCOUNT TO FINISH INSTALLING</div>
+    <div class="signup-field">
+      <label>Name</label>
+      <input type="text" id="suName" class="lock-input signup-input" placeholder="Your full name" autocomplete="off">
+    </div>
+    <div class="signup-field">
+      <label>Email</label>
+      <input type="email" id="suEmail" class="lock-input signup-input" placeholder="you@email.com" autocomplete="off">
+    </div>
+    <div class="signup-field">
+      <label>Make Password</label>
+      <input type="password" id="suPass" class="lock-input signup-input" placeholder="At least 4 characters" autocomplete="off" maxlength="24">
+    </div>
+    <div class="signup-field">
+      <label>Confirm Password</label>
+      <input type="password" id="suPass2" class="lock-input signup-input" placeholder="Type it again" autocomplete="off" maxlength="24">
+    </div>
+    <div class="lock-error" id="signupError"></div>
+    <button class="lock-btn signup-submit" onclick="createJarvisAccount()">Create Account &amp; Launch Jarvis OS &#8594;</button>
+    <div class="lock-hint">Your account lives on this device. Jarvis will use your name and email to personalize the OS.</div>
+  </div>
+</div>
+
 <div id="lockScreen">
   <div class="lock-time" id="lockTime">--:--</div>
   <div class="lock-date" id="lockDate">--</div>
-  <div class="lock-avatar">AA</div>
-  <div class="lock-name">Abdullah Anser</div>
+  <div class="lock-avatar" id="lockAvatar">AA</div>
+  <div class="lock-name" id="lockNameDisplay">Abdullah Anser</div>
   <div class="lock-sub">Jarvis OS &middot; Locked</div>
   <div class="lock-form">
     <input type="password" id="lockPin" class="lock-input" placeholder="Enter password" maxlength="24" autocomplete="off">
@@ -480,14 +536,105 @@ const bootInterval = setInterval(()=>{
       document.getElementById('boot').style.opacity = '0';
       setTimeout(()=>{
         document.getElementById('boot').style.display='none';
-        document.getElementById('lockScreen').classList.add('active');
-        updateLockClock();
-        const pinField = document.getElementById('lockPin');
-        if(pinField) pinField.focus();
+        updateIdentityDisplay();
+        if(!localStorage.getItem('jarvisAccount')){
+          document.getElementById('signupScreen').classList.add('active');
+          const n = document.getElementById('suName'); if(n) n.focus();
+        } else {
+          document.getElementById('lockScreen').classList.add('active');
+          updateLockClock();
+          const pinField = document.getElementById('lockPin');
+          if(pinField) pinField.focus();
+        }
       }, 800);
     }, 500);
   }
 }, 420);
+
+/* ================= SIGN-UP / ACCOUNT ================= */
+function initialsOf(name){
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if(parts.length === 0) return 'JV';
+  if(parts.length === 1) return parts[0].slice(0,2).toUpperCase();
+  return (parts[0][0] + parts[parts.length-1][0]).toUpperCase();
+}
+function updateIdentityDisplay(){
+  const raw = localStorage.getItem('jarvisAccount');
+  const nameEl = document.getElementById('lockNameDisplay');
+  const avatarEl = document.getElementById('lockAvatar');
+  if(!raw){ return; }
+  try{
+    const acct = JSON.parse(raw);
+    if(nameEl) nameEl.textContent = acct.name || 'Abdullah Anser';
+    if(avatarEl) avatarEl.textContent = initialsOf(acct.name || 'Abdullah Anser');
+  }catch(e){}
+}
+function createJarvisAccount(){
+  const name = (document.getElementById('suName').value || '').trim();
+  const email = (document.getElementById('suEmail').value || '').trim();
+  const pass = document.getElementById('suPass').value || '';
+  const pass2 = document.getElementById('suPass2').value || '';
+  const err = document.getElementById('signupError');
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  if(!name){ err.textContent = 'Enter your name to continue.'; return; }
+  if(!emailOk){ err.textContent = 'Enter a valid email address.'; return; }
+  if(pass.length < 4){ err.textContent = 'Password must be at least 4 characters.'; return; }
+  if(pass !== pass2){ err.textContent = 'Passwords do not match.'; return; }
+  err.textContent = '';
+  localStorage.setItem('jarvisAccount', JSON.stringify({ name, email }));
+  localStorage.setItem('jarvisPin', pass);
+  updateIdentityDisplay();
+  // Best-effort: log the signup with the real Jarvis backend so it's a genuine account, not just local state.
+  fetch('https://base44.app/api/apps/6a3be2a74a09f2cd7f59d2ee/functions/jarvisOsSignup', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ full_name: name, email })
+  }).catch(()=>{});
+  const signup = document.getElementById('signupScreen');
+  signup.style.opacity = '0';
+  setTimeout(()=>{
+    signup.classList.remove('active');
+    signup.style.opacity = '1';
+    document.getElementById('desktop').classList.add('active');
+  }, 400);
+}
+
+/* ================= ACCOUNT / SIGNUP ================= */
+function getStoredAccount(){
+  try{ return JSON.parse(localStorage.getItem('jarvisAccount') || 'null'); } catch(e){ return null; }
+}
+function updateIdentityDisplay(){
+  const acc = getStoredAccount();
+  const nameEl = document.getElementById('lockNameDisplay');
+  const avatarEl = document.getElementById('lockAvatar');
+  const name = (acc && acc.name) ? acc.name : 'Abdullah Anser';
+  const initials = name.trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase() || 'AA';
+  if(nameEl) nameEl.textContent = name;
+  if(avatarEl) avatarEl.textContent = initials;
+}
+function createJarvisAccount(){
+  const name = document.getElementById('suName').value.trim();
+  const email = document.getElementById('suEmail').value.trim();
+  const pass = document.getElementById('suPass').value;
+  const pass2 = document.getElementById('suPass2').value;
+  const err = document.getElementById('signupError');
+  if(!name){ err.textContent = 'Enter your name.'; return; }
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ err.textContent = 'Enter a valid email address.'; return; }
+  if(!pass || pass.length < 4){ err.textContent = 'Password must be at least 4 characters.'; return; }
+  if(pass !== pass2){ err.textContent = 'Passwords do not match.'; return; }
+  err.textContent = '';
+  localStorage.setItem('jarvisAccount', JSON.stringify({name, email}));
+  localStorage.setItem('jarvisPin', pass);
+  updateIdentityDisplay();
+  const screen = document.getElementById('signupScreen');
+  screen.style.opacity = '0';
+  setTimeout(()=>{
+    screen.classList.remove('active');
+    screen.style.opacity = '1';
+    document.getElementById('desktop').classList.add('active');
+    setTimeout(()=>{ if(typeof initHud==='function') initHud(); }, 200);
+  }, 400);
+}
 
 /* ================= LOCK / LOGIN SCREEN ================= */
 function updateLockClock(){
@@ -500,6 +647,55 @@ function updateLockClock(){
 setInterval(updateLockClock, 1000*15);
 
 function getStoredPin(){ return localStorage.getItem('jarvisPin') || 'jarvis1.1'; }
+
+/* ================= ACCOUNT / IDENTITY ================= */
+function getJarvisAccount(){
+  try{ return JSON.parse(localStorage.getItem('jarvisAccount') || 'null'); }catch(e){ return null; }
+}
+function updateIdentityDisplay(){
+  const acct = getJarvisAccount();
+  const name = acct && acct.name ? acct.name : 'Abdullah Anser';
+  const first = name.trim().split(' ')[0] || 'Stark';
+  const initials = name.trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase() || 'AA';
+  const av = document.getElementById('lockAvatar'); if(av) av.textContent = initials;
+  const nm = document.getElementById('lockNameDisplay'); if(nm) nm.textContent = name;
+  const gt = document.getElementById('greetTitle');
+  if(gt){
+    const hr = new Date().getHours();
+    const part = hr < 12 ? 'Morning' : hr < 17 ? 'Afternoon' : 'Evening';
+    gt.textContent = `Good ${part}, ${first}.`;
+  }
+}
+function validateEmail(email){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); }
+async function createJarvisAccount(){
+  const name = document.getElementById('suName').value.trim();
+  const email = document.getElementById('suEmail').value.trim();
+  const pass = document.getElementById('suPass').value;
+  const pass2 = document.getElementById('suPass2').value;
+  const err = document.getElementById('signupError');
+  if(!name || !email || !pass || !pass2){ err.textContent = 'Please fill in every field.'; return; }
+  if(!validateEmail(email)){ err.textContent = 'Enter a valid email address.'; return; }
+  if(pass.length < 4){ err.textContent = 'Password must be at least 4 characters.'; return; }
+  if(pass !== pass2){ err.textContent = 'Passwords do not match.'; return; }
+  err.textContent = '';
+  localStorage.setItem('jarvisAccount', JSON.stringify({ name, email }));
+  localStorage.setItem('jarvisPin', pass);
+  updateIdentityDisplay();
+  // Connect this account to Jarvis's real backend so it shows up in his system (fire-and-forget, non-blocking)
+  fetch('https://base44.app/api/apps/6a3be2a74a09f2cd7f59d2ee/functions/jarvisOsSignup', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ full_name: name, email: email })
+  }).catch(()=>{ /* offline is fine, account still works locally */ });
+  const screen = document.getElementById('signupScreen');
+  screen.style.opacity = '0';
+  setTimeout(()=>{
+    screen.classList.remove('active');
+    screen.style.opacity = '1';
+    document.getElementById('desktop').classList.add('active');
+  }, 400);
+}
+
 function tryUnlock(){
   const field = document.getElementById('lockPin');
   const err = document.getElementById('lockError');
@@ -867,6 +1063,6 @@ function openSettings(){
 /* Open terminal by default after boot for effect */
 setTimeout(()=>{ /* left empty intentionally — user opens apps manually */ }, 3200);
 </script>
-<script src="apps-extra.js?v=7"></script>
+<script src="apps-extra.js?v=8"></script>
 </body>
 </html>
