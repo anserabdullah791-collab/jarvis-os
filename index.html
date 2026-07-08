@@ -61,7 +61,7 @@
   #desktop.active{ display:block; }
 
   #icons{
-    position:absolute; top:24px; left:24px; right:24px; bottom:80px;
+    position:absolute; top:64px; left:24px; right:260px; bottom:80px;
     display:grid; grid-auto-flow:column; grid-template-rows:repeat(auto-fill, 96px);
     justify-content:start; gap:12px;
   }
@@ -219,6 +219,57 @@
   .swatch{ width:100%; height:80px; border-radius:8px; margin-bottom:10px; border:1px solid rgba(255,255,255,0.1); }
   .todo-item{ display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.06); font-size:13px; }
   .todo-item.done{ opacity:0.5; text-decoration:line-through; }
+
+  /* ---------- ARC REACTOR HUD THEME ---------- */
+  body::before{
+    content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
+    background-image:
+      linear-gradient(rgba(0,217,255,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,217,255,0.05) 1px, transparent 1px);
+    background-size:38px 38px;
+    opacity:0.5;
+  }
+  #topbar{
+    position:fixed; top:0; left:0; right:0; height:34px; z-index:50;
+    display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(180deg, rgba(4,10,18,0.9), rgba(4,10,18,0.4));
+    border-bottom:1px solid rgba(0,217,255,0.25);
+    letter-spacing:5px; font-size:11px; color:var(--accent); font-weight:700;
+    text-shadow:0 0 10px rgba(0,217,255,0.6);
+  }
+  #arcReactor{
+    position:fixed; right:40px; bottom:70px; width:220px; height:220px; z-index:1; pointer-events:none;
+    opacity:0.35;
+  }
+  #arcReactor .ring{ position:absolute; border-radius:50%; border:2px solid var(--accent); box-shadow:0 0 18px rgba(0,217,255,0.5); }
+  #arcReactor .r1{ inset:0; animation:spinSlow 14s linear infinite; }
+  #arcReactor .r2{ inset:26px; border-color:rgba(0,217,255,0.6); animation:spinSlow 9s linear infinite reverse; }
+  #arcReactor .r3{ inset:52px; border-color:rgba(255,255,255,0.5); animation:spinSlow 6s linear infinite; }
+  #arcReactor .core{ position:absolute; inset:86px; border-radius:50%; background:radial-gradient(circle, #eafcff 0%, var(--accent) 45%, rgba(0,217,255,0) 75%); animation:corePulse 2.4s ease-in-out infinite; }
+  @keyframes spinSlow{ from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
+  @keyframes corePulse{ 0%,100%{ opacity:0.85; } 50%{ opacity:1; box-shadow:0 0 40px 10px rgba(0,217,255,0.5);} }
+
+  #statusPanel{
+    position:fixed; top:46px; right:20px; width:220px; z-index:20;
+    background:rgba(6,14,24,0.7); border:1px solid rgba(0,217,255,0.25); border-radius:10px;
+    padding:14px; backdrop-filter:blur(6px);
+  }
+  #statusPanel h4{ font-size:10px; letter-spacing:2px; color:var(--accent); margin-bottom:10px; text-transform:uppercase; }
+  .stat-row{ margin-bottom:9px; }
+  .stat-row .stat-label{ display:flex; justify-content:space-between; font-size:10.5px; color:var(--text-dim); margin-bottom:3px; }
+  .stat-bar{ height:4px; border-radius:2px; background:rgba(255,255,255,0.08); overflow:hidden; }
+  .stat-bar .fill{ height:100%; background:linear-gradient(90deg, var(--accent), #7cf9ff); box-shadow:0 0 8px rgba(0,217,255,0.6); }
+
+  #greetCard{
+    position:fixed; top:46px; left:24px; width:300px; z-index:20;
+    background:rgba(6,14,24,0.8); border:1px solid rgba(0,217,255,0.25); border-radius:12px;
+    padding:16px 18px; backdrop-filter:blur(6px);
+  }
+  #greetCard .gc-close{ position:absolute; top:8px; right:10px; cursor:pointer; color:var(--text-dim); font-size:12px; }
+  #greetCard h3{ color:#fff; font-size:16px; margin-bottom:4px; }
+  #greetCard .gc-sub{ color:var(--text-dim); font-size:11px; margin-bottom:10px; }
+  #greetCard .gc-row{ display:flex; align-items:center; gap:8px; font-size:11.5px; color:var(--text-main); padding:5px 0; border-top:1px solid rgba(255,255,255,0.06); }
+  #greetCard .gc-dot{ width:6px; height:6px; border-radius:50%; background:var(--success); box-shadow:0 0 6px var(--success); }
 </style>
 </head>
 <body>
@@ -232,6 +283,23 @@
 </div>
 
 <div id="desktop">
+  <div id="topbar">JARVIS OS</div>
+  <div id="arcReactor"><div class="ring r1"></div><div class="ring r2"></div><div class="ring r3"></div><div class="core"></div></div>
+  <div id="statusPanel">
+    <h4>System Status</h4>
+    <div class="stat-row"><div class="stat-label"><span>CPU Cores</span><span id="statCpu">--</span></div><div class="stat-bar"><div class="fill" id="statCpuBar" style="width:40%"></div></div></div>
+    <div class="stat-row"><div class="stat-label"><span>Memory</span><span id="statMem">--</span></div><div class="stat-bar"><div class="fill" id="statMemBar" style="width:30%"></div></div></div>
+    <div class="stat-row"><div class="stat-label"><span>Network</span><span id="statNet">--</span></div><div class="stat-bar"><div class="fill" id="statNetBar" style="width:70%"></div></div></div>
+    <div class="stat-row"><div class="stat-label"><span>Battery</span><span id="statBatt">--</span></div><div class="stat-bar"><div class="fill" id="statBattBar" style="width:100%"></div></div></div>
+  </div>
+  <div id="greetCard">
+    <span class="gc-close" onclick="document.getElementById('greetCard').style.display='none'">&#10005;</span>
+    <h3 id="greetTitle">Good Morning, Stark.</h3>
+    <div class="gc-sub" id="greetSub">All systems nominal.</div>
+    <div class="gc-row"><span class="gc-dot"></span><span id="greetDate">--</span></div>
+    <div class="gc-row"><span class="gc-dot"></span><span>Fast Response Mode: Active</span></div>
+    <div class="gc-row"><span class="gc-dot"></span><span>WhatsApp channel: Connected</span></div>
+  </div>
   <div id="icons">
     <div class="icon" onclick="openApp('terminal')">
       <div class="glyph">&gt;_</div><div class="label">Terminal</div>
