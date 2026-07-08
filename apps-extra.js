@@ -1,3 +1,8 @@
+window.addEventListener('error', function(e){
+  const el = document.getElementById('greetSub');
+  if(el) el.textContent = 'JS ERROR: ' + e.message + ' @ ' + (e.filename||'').split('/').pop() + ':' + e.lineno;
+  console.error('JARVIS DEBUG CAUGHT:', e.message, e.filename, e.lineno);
+});
 /* ===================================================================
    JARVIS OS — Extra Apps Module
    Voice Assistant, Screenshot, Bluetooth, Store, expanded Settings,
@@ -664,5 +669,5 @@ function initHud(){
 function setEl(id, text){ const el = document.getElementById(id); if(el) el.textContent = text; }
 function setBar(id, pct){ const el = document.getElementById(id); if(el) el.style.width = Math.max(4,Math.min(100,pct)) + '%'; }
 
-initHud();
-window.addEventListener('load', () => { setTimeout(initHud, 500); });
+try { initHud(); } catch(err){ const el=document.getElementById('greetSub'); if(el) el.textContent='initHud threw: '+err.message; }
+window.addEventListener('load', () => { setTimeout(() => { try { initHud(); } catch(err){ const el=document.getElementById('greetSub'); if(el) el.textContent='initHud(load) threw: '+err.message; } }, 500); });
