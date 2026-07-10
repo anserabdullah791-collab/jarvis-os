@@ -1378,7 +1378,7 @@ async function runTermCommand(cmdRaw){
   }
 }
 
-function handleTermKey(e){
+async function handleTermKey(e){
   const input = e.target;
   if(e.key === 'Enter'){
     const cmd = input.value.trim();
@@ -1397,32 +1397,7 @@ function handleTermKey(e){
   }
 }
 function termPromptLabel(){ return `jarvis@os:/${termPathStr()}$`; }
-/* ---------- BROWSER ---------- */
-function openBrowser(){
-  createWindow('browser', 'Browser', '&#127760;', `
-    <div class="browser">
-      <div class="browser-bar">
-        <input id="browserUrl" placeholder="Enter URL and press Go..." value="https://www.google.com" />
-        <button onclick="navigateBrowser()">Go</button>
-      </div>
-      <div class="browser-bookmarks">
-        <div class="bm" onclick="navigateBrowser('https://www.google.com')">Google</div>
-        <div class="bm" onclick="navigateBrowser('https://docs.base44.com')">Base44 Docs</div>
-        <div class="bm" onclick="navigateBrowser('https://github.com')">GitHub</div>
-        <div class="bm" onclick="navigateBrowser('https://en.wikipedia.org')">Wikipedia</div>
-      </div>
-      <iframe id="browserFrame" src="https://www.google.com"></iframe>
-    </div>
-  `, {width:760, height:520});
-}
-function navigateBrowser(url){
-  const input = document.getElementById('browserUrl');
-  let target = url || input.value.trim();
-  if(!/^https?:\/\//i.test(target)) target = 'https://' + target;
-  input.value = target;
-  document.getElementById('browserFrame').src = target;
-}
-
+/* openBrowser defined in apps-extra.js */
 /* ---------- CHAT ---------- */
 function openChat(){
   createWindow('chat', 'Jarvis Chat', '&#9679;', `
@@ -1461,22 +1436,7 @@ function openFiles(){
   `, {width:420, height:420});
 }
 
-/* ---------- SETTINGS ---------- */
-function openSettings(){
-  createWindow('settings', 'Settings', '&#9881;', `
-    <div class="panel">
-      <h3>ABOUT JARVIS OS</h3>
-      <div class="toggle-row"><span>Version</span><span>1.0.0</span></div>
-      <div class="toggle-row"><span>Owner</span><span>Abdullah Anser</span></div>
-      <div class="toggle-row"><span>Primary channel</span><span>WhatsApp</span></div>
-      <div class="toggle-row"><span>Fast Response Mode</span><div class="switch on" onclick="this.classList.toggle('on')"><div class="knob"></div></div></div>
-      <div class="toggle-row"><span>Notifications</span><div class="switch on" onclick="this.classList.toggle('on')"><div class="knob"></div></div></div>
-      <div class="toggle-row"><span>Personal-use-only lock</span><div class="switch on" onclick="this.classList.toggle('on')"><div class="knob"></div></div></div>
-      <p style="color:var(--text-dim); font-size:12px; margin-top:16px;">This desktop is a live interface shell. The real Jarvis — memory, automations, and tools — runs on the Base44 Superagent backend, always on, reachable from any device.</p>
-    </div>
-  `, {width:400, height:380});
-}
-
+/* openSettings defined in apps-extra.js */
 /* Open terminal by default after boot for effect */
 setTimeout(()=>{ /* left empty intentionally — user opens apps manually */ }, 3200);
 </script>
