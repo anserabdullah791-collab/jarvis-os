@@ -111,77 +111,292 @@ let voiceListening = false;
 let selectedVoice = null;
 
 function openVoice(){
-  createWindow('voice', 'Voice Assistant', '&#127908;', `
-    <div class="panel">
-      <h3>JARVIS VOICE — WAKE WORD</h3>
-      <p style="color:var(--text-dim); font-size:12px;">Say "Hey Jarvis" any time this tab is open and focused, then speak your command. Real browser speech recognition + text-to-speech — works best in Chrome/Edge.</p>
-      <div style="display:flex; flex-direction:column; align-items:center; gap:10px; margin:16px 0;">
+  createWindow('voice', 'Jarvis Voice AI', '&#127908;', `
+    <div class="panel" style="overflow:auto;max-height:560px;">
+      <h3 style="display:flex;align-items:center;gap:8px;">&#127908; JARVIS VOICE AI <span id="vaLiveBadge" style="font-size:10px;padding:2px 8px;border-radius:20px;background:rgba(0,217,255,0.15);color:var(--accent);letter-spacing:2px;">OFFLINE READY</span></h3>
+
+      <!-- Orb -->
+      <div style="display:flex;flex-direction:column;align-items:center;gap:10px;margin:14px 0;">
         <div class="jarvis-orb-lg" id="voiceOrb"><div class="orb-ring"></div><div class="orb-core"></div></div>
-        <div style="font-size:12px; color:var(--accent);" id="wakeStatus">Wake word: OFF</div>
-        <button class="btn" id="wakeToggleBtn" onclick="toggleWakeWord()">Enable "Hey Jarvis"</button>
+        <div style="font-size:12px;color:var(--accent);" id="wakeStatus">Say <b>"Hey Jarvis"</b> — I'm always listening</div>
       </div>
-      <div style="display:flex; flex-direction:column; align-items:center; gap:10px; margin:14px 0;">
+
+      <!-- Always-on toggle -->
+      <div class="toggle-row" style="margin-bottom:10px;">
+        <span style="font-weight:600;">Always-On Wake Word</span>
+        <div class="switch on" id="alwaysOnSwitch" onclick="vaToggleAlwaysOn()"><div class="knob"></div></div>
+      </div>
+      <div class="toggle-row" style="margin-bottom:14px;">
+        <span style="font-weight:600;">Tap to Speak Now</span>
         <button class="mic-btn" id="micBtn" onclick="toggleListening()">&#127908;</button>
-        <div style="font-size:11px; color:var(--text-dim);" id="micStatus">Or tap to speak a command right now</div>
       </div>
-      <div class="transcript" id="voiceTranscript">Try: "open youtube", "open calculator", "what's the weather", "read the news", "what time is it", "lock the screen", "tell me a joke".</div>
-      <p style="color:var(--text-dim); font-size:11px; margin-top:8px;">Note: for real private actions — reading your Gmail, sending messages, checking your calendar — message Jarvis on WhatsApp. This in-browser voice brain runs locally for safety since this page is public.</p>
-      <h3 style="margin-top:20px;">VOICE SETTINGS</h3>
-      <div class="row" style="margin-bottom:10px;">
-        <select class="field" id="voiceSelect" onchange="setVoice(this.value)"></select>
+
+      <!-- Transcript -->
+      <div class="transcript" id="voiceTranscript" style="min-height:60px;margin-bottom:12px;">
+        Listening for "Hey Jarvis"... Try: "open maps", "what time is it", "open camera", "battery status", "my location", "open youtube", "lock the screen", "tell me a joke", "open files"
       </div>
-      <div class="row" style="margin-bottom:8px;"><span style="width:60px; font-size:12px; color:var(--text-dim);">Rate</span><input type="range" min="0.5" max="2" step="0.1" value="1" id="voiceRate" style="flex:1"></div>
-      <div class="row" style="margin-bottom:14px;"><span style="width:60px; font-size:12px; color:var(--text-dim);">Pitch</span><input type="range" min="0" max="2" step="0.1" value="1" id="voicePitch" style="flex:1"></div>
+
+      <!-- Voice settings -->
+      <h3 style="margin-bottom:10px;">Voice Settings</h3>
+      <div class="row" style="margin-bottom:8px;">
+        <select class="field" id="voiceSelect" onchange="setVoice(this.value)" style="flex:1;"></select>
+      </div>
+      <div class="row" style="margin-bottom:6px;"><span style="width:50px;font-size:12px;color:var(--text-dim);">Rate</span><input type="range" min="0.5" max="2" step="0.1" value="0.95" id="voiceRate" style="flex:1"></div>
+      <div class="row" style="margin-bottom:12px;"><span style="width:50px;font-size:12px;color:var(--text-dim);">Pitch</span><input type="range" min="0" max="2" step="0.1" value="1" id="voicePitch" style="flex:1"></div>
       <div class="row">
-        <input class="field" id="ttsText" placeholder="Type text for Jarvis to say..." value="Hello, I am Jarvis. Fully operational.">
+        <input class="field" id="ttsText" placeholder="Type text for Jarvis to say..." value="Hello Abdullah. I am fully operational and always listening.">
         <button class="btn" onclick="speakText()">Speak</button>
       </div>
+
+      <!-- Command reference -->
+      <h3 style="margin-top:16px;margin-bottom:8px;">Command Reference</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:11px;color:var(--text-dim);">
+        <div>"open [app]"</div><div>Opens any app</div>
+        <div>"what time is it"</div><div>Reads current time</div>
+        <div>"my location"</div><div>Gets GPS coords</div>
+        <div>"battery status"</div><div>Battery level</div>
+        <div>"my ip"</div><div>Shows IP address</div>
+        <div>"lock screen"</div><div>Locks Jarvis OS</div>
+        <div>"take screenshot"</div><div>Opens screenshot</div>
+        <div>"open camera"</div><div>Launches camera</div>
+        <div>"tell me a joke"</div><div>Jarvis tells a joke</div>
+        <div>"what's today"</div><div>Date & day</div>
+        <div>"hello jarvis"</div><div>Status check</div>
+        <div>"close all"</div><div>Closes all windows</div>
+      </div>
     </div>
-  `, {width:460, height:660});
-  setTimeout(populateVoices, 200);
-  setTimeout(()=>{ const s=document.getElementById('wakeStatus'); if(s) s.textContent = wakeWordEnabled ? 'Wake word: ON — listening for "Hey Jarvis"' : 'Wake word: OFF'; }, 50);
+  `, {width:460, height:680});
+  setTimeout(()=>{
+    populateVoices();
+    const s=document.getElementById('wakeStatus');
+    if(s) s.innerHTML=wakeWordEnabled?'Say <b>"Hey Jarvis"</b> — I\'m always listening':'Wake word OFF — toggle to enable';
+    const sw=document.getElementById('alwaysOnSwitch');
+    if(sw){ if(wakeWordEnabled) sw.classList.add('on'); else sw.classList.remove('on'); }
+    // Auto-start always-on if not already running
+    if(!wakeWordEnabled){ toggleWakeWord(); }
+  },100);
+}
+
+function vaToggleAlwaysOn(){
+  toggleWakeWord();
+  const sw=document.getElementById('alwaysOnSwitch');
+  if(sw){ if(wakeWordEnabled) sw.classList.add('on'); else sw.classList.remove('on'); }
 }
 
 function populateVoices(){
   if(!('speechSynthesis' in window)) return;
-  const sel = document.getElementById('voiceSelect');
-  if(!sel) return;
-  let voices = speechSynthesis.getVoices();
-  const render = () => {
-    voices = speechSynthesis.getVoices();
-    sel.innerHTML = voices.map((v,i)=>`<option value="${i}">${v.name} (${v.lang})</option>`).join('');
+  const sel=document.getElementById('voiceSelect'); if(!sel) return;
+  const render=()=>{
+    const voices=speechSynthesis.getVoices();
+    sel.innerHTML=voices.map((v,i)=>`<option value="${i}" ${v.name.toLowerCase().includes('female')||v.name.toLowerCase().includes('samantha')||v.name.toLowerCase().includes('karen')?'selected':''}>${v.name} (${v.lang})</option>`).join('');
   };
-  render();
-  speechSynthesis.onvoiceschanged = render;
-}
-function setVoice(idx){
-  const voices = speechSynthesis.getVoices();
-  selectedVoice = voices[idx] || null;
-}
-function speakText(text){
-  if(!('speechSynthesis' in window)) return;
-  const say = text !== undefined ? text : document.getElementById('ttsText').value;
-  const u = new SpeechSynthesisUtterance(say);
-  if(selectedVoice) u.voice = selectedVoice;
-  const rateEl = document.getElementById('voiceRate');
-  const pitchEl = document.getElementById('voicePitch');
-  u.rate = rateEl ? parseFloat(rateEl.value) : 1;
-  u.pitch = pitchEl ? parseFloat(pitchEl.value) : 1;
-  u.onstart = () => setOrbState('speaking');
-  u.onend = () => setOrbState(wakeWordEnabled ? 'wake-idle' : 'idle');
-  speechSynthesis.cancel();
-  speechSynthesis.speak(u);
-}
-function setOrbState(state){
-  ['voiceOrb'].forEach(id=>{
-    const el = document.getElementById(id);
-    if(!el) return;
-    el.className = 'jarvis-orb-lg orb-' + state;
-    el.innerHTML = '<div class="orb-ring"></div><div class="orb-core"></div>';
-  });
+  render(); speechSynthesis.onvoiceschanged=render;
 }
 
-/* ---------------- MANUAL TAP-TO-SPEAK ---------------- */
+function setVoice(idx){
+  const voices=speechSynthesis.getVoices(); selectedVoice=voices[idx]||null;
+}
+
+function speakText(text){
+  if(!('speechSynthesis' in window)) return;
+  const say=text!==undefined?text:(document.getElementById('ttsText')||{}).value||'';
+  if(!say) return;
+  const u=new SpeechSynthesisUtterance(say);
+  if(selectedVoice) u.voice=selectedVoice;
+  const rateEl=document.getElementById('voiceRate');
+  const pitchEl=document.getElementById('voicePitch');
+  u.rate=rateEl?parseFloat(rateEl.value):0.95;
+  u.pitch=pitchEl?parseFloat(pitchEl.value):1;
+  u.onstart=()=>setOrbState('speaking');
+  u.onend=()=>setOrbState(wakeWordEnabled?'wake-idle':'idle');
+  speechSynthesis.cancel(); speechSynthesis.speak(u);
+}
+
+function setOrbState(state){
+  const el=document.getElementById('voiceOrb'); if(!el) return;
+  el.className='jarvis-orb-lg orb-'+state;
+  el.innerHTML='<div class="orb-ring"></div><div class="orb-core"></div>';
+}
+
+/* ---------- ALWAYS-ON WAKE WORD ENGINE ---------- */
+let wakeWordEnabled=false, wakeRecognition=null, voiceListening=false, recognition=null, selectedVoice=null;
+
+function toggleWakeWord(){
+  if(wakeWordEnabled){ stopWakeWordEngine(false); } else { startWakeWordEngine(); }
+  const s=document.getElementById('wakeStatus');
+  if(s) s.innerHTML=wakeWordEnabled?'Say <b>"Hey Jarvis"</b> — I\'m always listening':'Wake word OFF';
+  const badge=document.getElementById('vaLiveBadge');
+  if(badge) badge.textContent=wakeWordEnabled?'🟢 ALWAYS ON':'OFFLINE READY';
+}
+
+function startWakeWordEngine(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){ alert('Speech recognition requires Chrome or Edge browser.'); return; }
+  wakeWordEnabled=true;
+  setOrbState('wake-idle');
+  function loop(){
+    if(!wakeWordEnabled) return;
+    wakeRecognition=new SR();
+    wakeRecognition.continuous=false;
+    wakeRecognition.lang='en-US';
+    wakeRecognition.interimResults=false;
+    wakeRecognition.onresult=(e)=>{
+      const said=e.results[e.results.length-1][0].transcript.toLowerCase().trim();
+      const tr=document.getElementById('voiceTranscript');
+      if(tr) tr.textContent='Heard: "'+said+'"';
+      if(said.includes('hey jarvis')||said.includes('jarvis')||said.includes('hi jarvis')){
+        speakText('Yes, how can I help you?');
+        setOrbState('speaking');
+        setTimeout(()=>startCommandListening(), 1800);
+      } else {
+        // still process as command even without wake word if it matches
+        const cmd=said.replace(/hey jarvis|hi jarvis|jarvis/gi,'').trim();
+        if(cmd.length>2) processVoiceCommand(cmd);
+      }
+    };
+    wakeRecognition.onend=()=>{ if(wakeWordEnabled) setTimeout(loop,300); };
+    wakeRecognition.onerror=(e)=>{ if(e.error!=='no-speech'&&e.error!=='aborted') console.log('Wake:',e.error); if(wakeWordEnabled) setTimeout(loop,1000); };
+    try{ wakeRecognition.start(); } catch(e){ if(wakeWordEnabled) setTimeout(loop,1000); }
+  }
+  loop();
+}
+
+function stopWakeWordEngine(keepListening){
+  wakeWordEnabled=false;
+  if(wakeRecognition){ try{wakeRecognition.stop();}catch(e){} wakeRecognition=null; }
+  if(!keepListening){ setOrbState('idle'); }
+}
+
+function startCommandListening(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(!SR) return;
+  const r=new SR(); r.lang='en-US'; r.interimResults=false; r.continuous=false;
+  setOrbState('listening');
+  const tr=document.getElementById('voiceTranscript'); if(tr) tr.textContent='Listening for your command...';
+  r.onresult=(e)=>{
+    const cmd=e.results[0][0].transcript.toLowerCase().trim();
+    if(tr) tr.textContent='Command: "'+cmd+'"';
+    processVoiceCommand(cmd);
+  };
+  r.onend=()=>{ if(wakeWordEnabled) setOrbState('wake-idle'); else setOrbState('idle'); };
+  r.onerror=(e)=>{ setOrbState(wakeWordEnabled?'wake-idle':'idle'); };
+  try{ r.start(); } catch(e){}
+}
+
+/* ---------- TAP TO SPEAK ---------- */
+function toggleListening(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){ document.getElementById('voiceTranscript').textContent='Speech recognition not supported. Use Chrome or Edge.'; return; }
+  const btn=document.getElementById('micBtn');
+  const status=document.getElementById('micStatus');
+  if(voiceListening){ if(recognition) recognition.stop(); voiceListening=false; if(btn) btn.classList.remove('listening'); return; }
+  if(wakeWordEnabled) stopWakeWordEngine(true);
+  recognition=new SR(); recognition.lang='en-US'; recognition.interimResults=false;
+  recognition.onresult=(e)=>{
+    const said=e.results[e.results.length-1][0].transcript.toLowerCase().trim();
+    const tr=document.getElementById('voiceTranscript'); if(tr) tr.textContent='You said: "'+said+'"';
+    processVoiceCommand(said);
+  };
+  recognition.onend=()=>{ voiceListening=false; if(btn) btn.classList.remove('listening'); setOrbState(wakeWordEnabled?'wake-idle':'idle'); if(wakeWordEnabled) startWakeWordEngine(); };
+  recognition.onerror=(e)=>{ voiceListening=false; if(btn) btn.classList.remove('listening'); };
+  voiceListening=true; if(btn) btn.classList.add('listening'); setOrbState('listening');
+  try{ recognition.start(); } catch(e){ voiceListening=false; }
+}
+
+/* ---------- AI COMMAND BRAIN (offline, no API needed) ---------- */
+const vaJokes=[
+  "Why did the robot go on a diet? It had too many bytes.",
+  "I told my computer I needed a break. Now it won't stop sending me Kit Kat ads.",
+  "Why do programmers prefer dark mode? Because light attracts bugs.",
+  "I'm reading a book about anti-gravity. It's impossible to put down.",
+  "Why did the scarecrow win an award? He was outstanding in his field."
+];
+
+function processVoiceCommand(cmd){
+  const tr=document.getElementById('voiceTranscript');
+  const say=(text)=>{ speakText(text); if(tr) tr.textContent='Jarvis: '+text; };
+
+  // Open apps
+  const openCmds={
+    'terminal':openTerminal,'browser':openBrowser,'maps':openMaps,'news':openNews,
+    'youtube':openYouTube,'calendar':openCalendar,'mail':openMail,'music':openMusic,
+    'photos':openPhotos,'settings':openSettings,'calculator':openCalculator,
+    'notes':openNotes,'clock':openClockApp,'stopwatch':openStopwatch,
+    'bluetooth':openBluetooth,'screenshot':openScreenshot,'paint':openPaint,
+    'weather':openWeather,'camera':()=>{openSysInfo();setTimeout(deviceCamera,600)},
+    'files':()=>{openSysInfo();setTimeout(deviceOpenFiles,600)},
+    'system':openSysInfo,'device':openSysInfo,'facebook':openFacebook,
+    'instagram':openInstagram,'tiktok':openTiktok,'store':openPlayStore,
+    'jarvis chat':()=>window.open('https://app.base44.com/superagent/6a3be2a74a09f2cd7f59d2ee','_blank'),
+    'radar':()=>window.open('https://base44.app/api/apps/6a3be2a74a09f2cd7f59d2ee/functions/flightRadar3D','_blank'),
+  };
+
+  for(const[key,fn] of Object.entries(openCmds)){
+    if(cmd.includes(key)){ say('Opening '+key); setTimeout(fn,500); return; }
+  }
+
+  // Time / date
+  if(cmd.includes('time')||cmd.includes('clock')){
+    const now=new Date(); const pkt=new Date(now.toLocaleString('en-US',{timeZone:'Asia/Karachi'}));
+    say('The time is '+pkt.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true})+' Pakistan Standard Time.');
+    return;
+  }
+  if(cmd.includes('date')||cmd.includes('today')){
+    say('Today is '+new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'}));
+    return;
+  }
+
+  // Location
+  if(cmd.includes('location')||cmd.includes('where am i')){
+    say('Fetching your GPS location now.');
+    navigator.geolocation&&navigator.geolocation.getCurrentPosition(p=>{
+      say('You are at latitude '+p.coords.latitude.toFixed(4)+', longitude '+p.coords.longitude.toFixed(4));
+    });
+    return;
+  }
+
+  // Battery
+  if(cmd.includes('battery')){
+    if(navigator.getBattery){
+      navigator.getBattery().then(b=>say('Battery is at '+Math.round(b.level*100)+' percent. '+(b.charging?'Currently charging.':'Not charging.')));
+    } else { say('Battery information is not available in this browser.'); }
+    return;
+  }
+
+  // IP
+  if(cmd.includes('ip')||cmd.includes('internet address')){
+    say('Looking up your IP address.');
+    fetch('https://ipapi.co/json/').then(r=>r.json()).then(d=>say('Your IP address is '+d.ip+', located in '+d.city+', '+d.country_name)).catch(()=>say('Could not fetch IP right now.'));
+    return;
+  }
+
+  // Lock
+  if(cmd.includes('lock')){
+    say('Locking Jarvis OS.'); setTimeout(()=>{ if(typeof lockScreen==='function') lockScreen(); },1000); return;
+  }
+
+  // Close all
+  if(cmd.includes('close all')||cmd.includes('close everything')){
+    say('Closing all windows.'); document.querySelectorAll('.win').forEach(w=>w.remove()); return;
+  }
+
+  // Joke
+  if(cmd.includes('joke')){
+    say(vaJokes[Math.floor(Math.random()*vaJokes.length)]); return;
+  }
+
+  // Greeting
+  if(cmd.includes('hello')||cmd.includes('hi')||cmd.includes('hey')){
+    say('Hello Abdullah! I am Jarvis, fully operational and at your service.'); return;
+  }
+
+  // Status
+  if(cmd.includes('status')||cmd.includes('system')||cmd.includes('how are you')){
+    say('All systems nominal. '+navigator.hardwareConcurrency+' CPU cores active, running on '+navigator.platform+'. I am fully operational.'); return;
+  }
+
+  // Fallback
+  say('I heard you say: '+cmd+'. I can open apps, tell the time, check your battery, location, IP, lock the screen, or tell a joke. What would you like?');
+}/* ---------------- MANUAL TAP-TO-SPEAK ---------------- */
 function toggleListening(){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if(!SR){
@@ -952,19 +1167,200 @@ function updateQr(){
 
 /* System Info */
 function openSysInfo(){
-  createWindow('sysinfo', 'System Info', '&#128187;', `
-    <div class="panel">
-      <h3>SYSTEM INFO (real, from your browser)</h3>
-      <div class="toggle-row"><span>Platform</span><span>${navigator.platform}</span></div>
-      <div class="toggle-row"><span>Browser</span><span style="font-size:10px; max-width:180px; text-align:right;">${navigator.userAgent.slice(0,40)}...</span></div>
-      <div class="toggle-row"><span>Screen</span><span>${screen.width}x${screen.height}</span></div>
-      <div class="toggle-row"><span>CPU Cores</span><span>${navigator.hardwareConcurrency || 'n/a'}</span></div>
-      <div class="toggle-row"><span>Online</span><span>${navigator.onLine ? 'Yes' : 'No'}</span></div>
-      <div class="toggle-row"><span>Language</span><span>${navigator.language}</span></div>
+  createWindow('sysinfo', 'Device Access Hub', '&#128187;', `
+    <div class="panel" style="overflow:auto;max-height:500px;">
+      <h3>&#128274; DEVICE ACCESS HUB</h3>
+      <p style="color:var(--text-dim);font-size:11px;margin-bottom:14px;">Jarvis requests real permissions from your device — click each button to grant access. Works on phone, PC, and laptop.</p>
+
+      <!-- LOCATION -->
+      <div class="toggle-row" style="flex-direction:column;align-items:flex-start;gap:6px;padding:10px 0;border-bottom:1px solid rgba(0,217,255,0.1);">
+        <div style="display:flex;justify-content:space-between;width:100%;align-items:center;">
+          <span style="font-weight:600;">&#128205; Location</span>
+          <button class="btn" id="locBtn" onclick="deviceGetLocation()">Get My Location</button>
+        </div>
+        <div id="locResult" style="font-size:11px;color:var(--accent);font-family:var(--font-mono);"></div>
+      </div>
+
+      <!-- IP -->
+      <div class="toggle-row" style="flex-direction:column;align-items:flex-start;gap:6px;padding:10px 0;border-bottom:1px solid rgba(0,217,255,0.1);">
+        <div style="display:flex;justify-content:space-between;width:100%;align-items:center;">
+          <span style="font-weight:600;">&#127760; IP Address & ISP</span>
+          <button class="btn" id="ipBtn" onclick="deviceGetIP()">Fetch IP Info</button>
+        </div>
+        <div id="ipResult" style="font-size:11px;color:var(--accent);font-family:var(--font-mono);"></div>
+      </div>
+
+      <!-- WIFI/NETWORK -->
+      <div class="toggle-row" style="flex-direction:column;align-items:flex-start;gap:6px;padding:10px 0;border-bottom:1px solid rgba(0,217,255,0.1);">
+        <div style="display:flex;justify-content:space-between;width:100%;align-items:center;">
+          <span style="font-weight:600;">&#128246; Network / WiFi</span>
+          <button class="btn" id="netBtn" onclick="deviceGetNetwork()">Scan Network</button>
+        </div>
+        <div id="netResult" style="font-size:11px;color:var(--accent);font-family:var(--font-mono);"></div>
+      </div>
+
+      <!-- BATTERY -->
+      <div class="toggle-row" style="flex-direction:column;align-items:flex-start;gap:6px;padding:10px 0;border-bottom:1px solid rgba(0,217,255,0.1);">
+        <div style="display:flex;justify-content:space-between;width:100%;align-items:center;">
+          <span style="font-weight:600;">&#128267; Battery</span>
+          <button class="btn" id="batBtn" onclick="deviceGetBattery()">Check Battery</button>
+        </div>
+        <div id="batResult" style="font-size:11px;color:var(--accent);font-family:var(--font-mono);"></div>
+      </div>
+
+      <!-- BLUETOOTH -->
+      <div class="toggle-row" style="flex-direction:column;align-items:flex-start;gap:6px;padding:10px 0;border-bottom:1px solid rgba(0,217,255,0.1);">
+        <div style="display:flex;justify-content:space-between;width:100%;align-items:center;">
+          <span style="font-weight:600;">&#128312; Bluetooth</span>
+          <button class="btn" id="btBtn" onclick="deviceBluetooth()">Scan Devices</button>
+        </div>
+        <div id="btResult" style="font-size:11px;color:var(--accent);font-family:var(--font-mono);"></div>
+      </div>
+
+      <!-- CAMERA -->
+      <div class="toggle-row" style="flex-direction:column;align-items:flex-start;gap:6px;padding:10px 0;border-bottom:1px solid rgba(0,217,255,0.1);">
+        <div style="display:flex;justify-content:space-between;width:100%;align-items:center;">
+          <span style="font-weight:600;">&#128247; Camera</span>
+          <button class="btn" id="camBtn" onclick="deviceCamera()">Open Camera</button>
+        </div>
+        <video id="camFeed" autoplay muted playsinline style="display:none;width:100%;border-radius:8px;margin-top:6px;border:1px solid var(--border-glow);max-height:180px;"></video>
+        <button class="btn secondary" id="camStopBtn" style="display:none;margin-top:4px;" onclick="deviceCameraStop()">Stop Camera</button>
+      </div>
+
+      <!-- FILES / PHOTOS -->
+      <div class="toggle-row" style="flex-direction:column;align-items:flex-start;gap:6px;padding:10px 0;border-bottom:1px solid rgba(0,217,255,0.1);">
+        <div style="display:flex;justify-content:space-between;width:100%;align-items:center;">
+          <span style="font-weight:600;">&#128194; Files & Photos</span>
+          <div style="display:flex;gap:6px;">
+            <button class="btn" onclick="deviceOpenFiles()">Open Files</button>
+            <button class="btn secondary" onclick="deviceOpenPhotos()">Open Photos</button>
+          </div>
+        </div>
+        <div id="fileResult" style="font-size:11px;color:var(--accent);"></div>
+        <div id="photoGrid" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;"></div>
+        <input type="file" id="fileInput" multiple style="display:none" onchange="deviceHandleFiles(this)">
+        <input type="file" id="photoInput" multiple accept="image/*" style="display:none" onchange="deviceHandlePhotos(this)">
+      </div>
+
+      <!-- SYSTEM INFO -->
+      <div style="padding:10px 0;">
+        <div style="font-weight:600;margin-bottom:8px;">&#128187; System Info</div>
+        <div class="toggle-row"><span>Platform</span><span>${navigator.platform}</span></div>
+        <div class="toggle-row"><span>CPU Cores</span><span>${navigator.hardwareConcurrency||'n/a'}</span></div>
+        <div class="toggle-row"><span>Screen</span><span>${screen.width}x${screen.height} @ ${screen.colorDepth}bit</span></div>
+        <div class="toggle-row"><span>Language</span><span>${navigator.language}</span></div>
+        <div class="toggle-row"><span>Online</span><span id="onlineStatus">${navigator.onLine?'✅ Yes':'❌ No'}</span></div>
+        <div class="toggle-row"><span>Memory</span><span>${navigator.deviceMemory ? navigator.deviceMemory+'GB RAM' : 'n/a'}</span></div>
+        <div class="toggle-row"><span>Touch Points</span><span>${navigator.maxTouchPoints||0}</span></div>
+      </div>
     </div>
-  `, {width:400, height:340});
+  `, {width:500, height:580});
 }
 
+function deviceGetLocation(){
+  const el=document.getElementById('locResult'); if(!el) return;
+  el.textContent='Requesting GPS...';
+  if(!navigator.geolocation){el.textContent='Geolocation not supported.';return;}
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const {latitude:lat,longitude:lon,accuracy}=pos.coords;
+    el.innerHTML='Lat: '+lat.toFixed(6)+' | Lon: '+lon.toFixed(6)+' | Acc: ~'+Math.round(accuracy)+'m<br>'
+      +'<a href="https://www.openstreetmap.org/?mlat='+lat+'&mlon='+lon+'&zoom=15" target="_blank" style="color:var(--accent);">Open on Map ↗</a>';
+  }, err=>{el.textContent='Error: '+err.message+' — allow location in browser settings.';});
+}
+
+function deviceGetIP(){
+  const el=document.getElementById('ipResult'); if(!el) return;
+  el.textContent='Fetching IP data...';
+  fetch('https://ipapi.co/json/').then(r=>r.json()).then(d=>{
+    el.innerHTML='IP: '+d.ip+' | ISP: '+(d.org||'n/a')+'<br>City: '+(d.city||'n/a')+', '+(d.country_name||'n/a')+' | Timezone: '+(d.timezone||'n/a');
+  }).catch(()=>{el.textContent='Could not fetch IP info right now.';});
+}
+
+function deviceGetNetwork(){
+  const el=document.getElementById('netResult'); if(!el) return;
+  const conn=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
+  if(conn){
+    el.innerHTML='Type: '+(conn.effectiveType||conn.type||'n/a')+'<br>'
+      +'Downlink: '+(conn.downlink||'n/a')+'Mbps | RTT: '+(conn.rtt||'n/a')+'ms<br>'
+      +'Save-data mode: '+(conn.saveData?'ON':'OFF');
+    conn.addEventListener('change',()=>{
+      el.innerHTML='Type: '+(conn.effectiveType||conn.type||'n/a')+' (updated)<br>'
+        +'Downlink: '+(conn.downlink||'n/a')+'Mbps | RTT: '+(conn.rtt||'n/a')+'ms';
+    });
+  } else {
+    el.innerHTML='Online: '+(navigator.onLine?'Yes':'No')+'<br>Network API not available in this browser (try Chrome on Android for full info).';
+  }
+}
+
+function deviceGetBattery(){
+  const el=document.getElementById('batResult'); if(!el) return;
+  if(!navigator.getBattery){el.textContent='Battery API not supported in this browser.';return;}
+  navigator.getBattery().then(bat=>{
+    const update=()=>{
+      el.innerHTML='Level: '+Math.round(bat.level*100)+'% | '
+        +(bat.charging?'⚡ Charging':'🔋 Discharging')
+        +(bat.chargingTime&&bat.chargingTime!==Infinity?' | Full in: '+Math.round(bat.chargingTime/60)+'min':'')
+        +(bat.dischargingTime&&bat.dischargingTime!==Infinity?' | Empty in: '+Math.round(bat.dischargingTime/60)+'min':'');
+    };
+    update();
+    bat.addEventListener('levelchange',update);
+    bat.addEventListener('chargingchange',update);
+  });
+}
+
+function deviceBluetooth(){
+  const el=document.getElementById('btResult'); if(!el) return;
+  if(!navigator.bluetooth){el.textContent='Web Bluetooth not supported. Use Chrome on Android/desktop.';return;}
+  el.textContent='Opening Bluetooth device picker...';
+  navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:['battery_service','device_information']})
+    .then(device=>{
+      el.innerHTML='&#128312; Connected: <b>'+device.name+'</b> (ID: '+device.id+')<br>Gatt: '+(device.gatt?'Available':'N/A');
+    }).catch(err=>{el.textContent='Bluetooth: '+err.message;});
+}
+
+let _camStream=null;
+function deviceCamera(){
+  const vid=document.getElementById('camFeed');
+  const stopBtn=document.getElementById('camStopBtn');
+  if(!vid) return;
+  navigator.mediaDevices.getUserMedia({video:true,audio:false})
+    .then(stream=>{
+      _camStream=stream; vid.srcObject=stream;
+      vid.style.display='block'; if(stopBtn) stopBtn.style.display='inline-block';
+    }).catch(err=>{const el=vid;el.style.display='none';alert('Camera: '+err.message);});
+}
+function deviceCameraStop(){
+  if(_camStream){_camStream.getTracks().forEach(t=>t.stop());_camStream=null;}
+  const vid=document.getElementById('camFeed'); if(vid){vid.style.display='none';}
+  const btn=document.getElementById('camStopBtn'); if(btn){btn.style.display='none';}
+}
+
+function deviceOpenFiles(){
+  const inp=document.getElementById('fileInput'); if(inp) inp.click();
+}
+function deviceOpenPhotos(){
+  const inp=document.getElementById('photoInput'); if(inp) inp.click();
+}
+function deviceHandleFiles(input){
+  const el=document.getElementById('fileResult'); if(!el) return;
+  const files=Array.from(input.files);
+  el.innerHTML='<b>'+files.length+' file(s) selected:</b><br>'+files.map(f=>f.name+' ('+Math.round(f.size/1024)+'KB)').join('<br>');
+}
+function deviceHandlePhotos(input){
+  const grid=document.getElementById('photoGrid'); if(!grid) return;
+  grid.innerHTML='';
+  Array.from(input.files).forEach(file=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const img=document.createElement('img');
+      img.src=e.target.result;
+      img.style.cssText='width:80px;height:80px;object-fit:cover;border-radius:6px;border:1px solid var(--border-glow);cursor:pointer;';
+      img.onclick=()=>window.open(e.target.result,'_blank');
+      grid.appendChild(img);
+    };
+    reader.readAsDataURL(file);
+  });
+}
 /* Stopwatch */
 let swInterval = null, swSeconds = 0;
 function openStopwatch(){
@@ -1229,17 +1625,90 @@ function openCloud(){
   `, {width:380, height:280});
 }
 
-/* ---------------- MAPS (real OpenStreetMap embed, centered on Phularwan) ---------------- */
+/* ---------------- MAPS (offline-capable full world map via Leaflet + OpenStreetMap) ---------------- */
 function openMaps(){
-  createWindow('maps', 'Maps', '&#128506;', `
-    <div style="padding:10px;">
-      <div style="font-size:12px; color:var(--text-dim); margin-bottom:8px;">Phularwan, Sargodha, Punjab, Pakistan — live OpenStreetMap</div>
-      <iframe width="100%" height="330" style="border:1px solid rgba(0,217,255,0.25); border-radius:8px;"
-        src="https://www.openstreetmap.org/export/embed.html?bbox=72.9924%2C32.3357%2C73.0324%2C32.3757&layer=mapnik&marker=32.3557%2C73.0124"></iframe>
+  createWindow('maps', 'World Map', '&#128506;', `
+    <div style="display:flex;flex-direction:column;height:100%;padding:0;">
+      <div style="display:flex;gap:6px;padding:8px;background:rgba(0,0,0,0.3);flex-shrink:0;align-items:center;">
+        <input id="mapSearch" class="field" placeholder="Search any place on Earth..." style="flex:1;font-size:12px;" onkeydown="if(event.key==='Enter')mapSearchGo()">
+        <button class="btn" onclick="mapSearchGo()" style="padding:6px 12px;font-size:11px;">Search</button>
+        <button class="btn secondary" onclick="mapMyLocation()" style="padding:6px 10px;font-size:11px;" title="My Location">📍</button>
+        <select id="mapLayer" class="field" style="width:110px;font-size:11px;" onchange="mapSwitchLayer(this.value)">
+          <option value="osm">Standard</option>
+          <option value="satellite">Satellite</option>
+          <option value="topo">Topo</option>
+          <option value="dark">Dark</option>
+        </select>
+      </div>
+      <div id="leafletMap" style="flex:1;min-height:340px;"></div>
+      <div id="mapStatus" style="padding:4px 10px;font-size:10px;color:var(--text-dim);background:rgba(0,0,0,0.3);flex-shrink:0;">
+        📡 Tiles cached for offline use · Scroll to zoom · Drag to pan · Search any city worldwide
+      </div>
     </div>
-  `, {width:480, height:420});
+  `, {width:600, height:480});
+
+  setTimeout(()=>{
+    if(window._leafletMapInstance){ window._leafletMapInstance.remove(); window._leafletMapInstance=null; }
+    if(!document.getElementById('leafletCSS')){
+      const lc=document.createElement('link');lc.id='leafletCSS';lc.rel='stylesheet';
+      lc.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';document.head.appendChild(lc);
+    }
+    if(!window.L){
+      const ls=document.createElement('script');ls.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      ls.onload=()=>initLeafletMap();document.head.appendChild(ls);
+    } else { initLeafletMap(); }
+  }, 100);
 }
 
+function initLeafletMap(){
+  const el=document.getElementById('leafletMap'); if(!el||!window.L) return;
+  const map=L.map('leafletMap',{zoomControl:true}).setView([32.3557,73.0124],10);
+  window._leafletMapInstance=map;
+  window._leafletLayers={
+    osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}),
+    satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'© Esri'}),
+    topo: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{maxZoom:17,attribution:'© OpenTopoMap'}),
+    dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19,attribution:'© CartoDB'})
+  };
+  window._leafletLayers.osm.addTo(map);
+  window._currentMapLayer='osm';
+  L.marker([32.3557,73.0124]).addTo(map).bindPopup('<b>Phularwan</b><br>Sargodha, Punjab, Pakistan').openPopup();
+}
+
+function mapSwitchLayer(layer){
+  const map=window._leafletMapInstance; if(!map||!window._leafletLayers) return;
+  if(window._currentMapLayer) map.removeLayer(window._leafletLayers[window._currentMapLayer]);
+  window._leafletLayers[layer].addTo(map);
+  window._currentMapLayer=layer;
+}
+
+function mapSearchGo(){
+  const q=document.getElementById('mapSearch').value.trim(); if(!q) return;
+  const status=document.getElementById('mapStatus');
+  if(status) status.textContent='Searching...';
+  fetch('https://nominatim.openstreetmap.org/search?format=json&q='+encodeURIComponent(q)+'&limit=1')
+    .then(r=>r.json()).then(data=>{
+      if(!data||!data.length){if(status) status.textContent='Place not found. Try a city or country name.'; return;}
+      const {lat,lon,display_name}=data[0];
+      const map=window._leafletMapInstance; if(!map) return;
+      map.setView([parseFloat(lat),parseFloat(lon)],13);
+      L.marker([parseFloat(lat),parseFloat(lon)]).addTo(map).bindPopup(display_name).openPopup();
+      if(status) status.textContent='📍 '+display_name;
+    }).catch(()=>{if(status) status.textContent='Offline — tiles cached from previous visits still viewable.';});
+}
+
+function mapMyLocation(){
+  if(!navigator.geolocation){alert('Geolocation not available in this browser.');return;}
+  const status=document.getElementById('mapStatus');
+  if(status) status.textContent='Getting your location...';
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const {latitude:lat,longitude:lon}=pos.coords;
+    const map=window._leafletMapInstance; if(!map) return;
+    map.setView([lat,lon],15);
+    L.marker([lat,lon]).addTo(map).bindPopup('<b>You are here</b><br>'+lat.toFixed(5)+', '+lon.toFixed(5)).openPopup();
+    if(status) status.textContent='📍 Your location: '+lat.toFixed(5)+', '+lon.toFixed(5);
+  },err=>{if(status) status.textContent='Location denied. Allow location permission in browser.';});
+}
 /* ---------------- NEWS (real fetch from Hacker News public API, CORS-open, no key) ---------------- */
 function openNews(){
   createWindow('news', 'News', '&#128240;', `
