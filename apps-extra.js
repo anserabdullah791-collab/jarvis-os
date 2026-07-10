@@ -511,7 +511,7 @@ function safeMath(expr){
   if(!/^[0-9+\-*/(). %]+$/.test(expr)) return null;
   try{ return Function('"use strict";return (' + expr + ')')(); }catch(e){ return null; }
 }
-async function fetchWeatherReply(){
+async async function fetchWeatherReply(){
   try{
     const r = await fetch('https://api.open-meteo.com/v1/forecast?latitude=32.3557&longitude=73.0124&current=temperature_2m,weather_code&timezone=Asia%2FKarachi');
     const j = await r.json();
@@ -519,7 +519,7 @@ async function fetchWeatherReply(){
     return `It's currently ${t} degrees Celsius in Phularwan.`;
   }catch(e){ return "I couldn't reach the weather service right now."; }
 }
-async function fetchNewsReply(){
+async async function fetchNewsReply(){
   try{
     const ids = await (await fetch('https://hacker-news.firebaseio.com/v0/topstories.json')).json();
     const top3 = await Promise.all(ids.slice(0,3).map(id=>fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`).then(r=>r.json())));
@@ -600,7 +600,7 @@ function openScreenshot(){
     </div>
   `, {width:440, height:420});
 }
-async function takeScreenshot(){
+async async function takeScreenshot(){
   const result = document.getElementById('shotResult');
   if(!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia){
     result.innerHTML = '<span style="color:var(--danger)">Screen capture not supported in this browser.</span>';
@@ -642,12 +642,13 @@ async function scanBluetooth(){
     result.innerHTML = '<span style="color:var(--danger)">Web Bluetooth not supported in this browser/OS.</span>';
     return;
   }
-  try{
-    const device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true });
-    result.innerHTML = `<div class="toggle-row"><span>${device.name || 'Unnamed device'}</span><span style="color:var(--success)">Found</span></div><div style="color:var(--text-dim); font-size:11px; margin-top:6px;">ID: ${device.id}</div>`;
-  }catch(err){
-    result.innerHTML = '<span style="color:var(--danger)">' + err.message + '</span>';
-  }
+  navigator.bluetooth.requestDevice({ acceptAllDevices: true })
+    .then(device => {
+      result.innerHTML = '<div class="toggle-row"><span>'+(device.name||'Unnamed device')+'</span><span style="color:var(--success)">Found ✅</span></div><div style="color:var(--text-dim); font-size:11px; margin-top:6px;">ID: '+device.id+'</div>';
+    })
+    .catch(err => {
+      result.innerHTML = '<span style="color:var(--danger)">' + err.message + '</span>';
+    });
 }
 
 /* ---------------- REAL TABBED BROWSER (multi-tab, back/forward, bookmarks, real search) ---------------- */
@@ -853,7 +854,7 @@ function renderActiveBrowserTab(){
   else if(tab.kind === 'search') content.innerHTML = tab.searchHtml || '';
 }
 
-async function smartGo(){
+async async function smartGo(){
   const raw = document.getElementById('browserUrl').value.trim();
   if(!raw) return;
   const looksLikeUrl = /^(https?:\/\/)?[\w.-]+\.[a-z]{2,}(\/.*)?$/i.test(raw) && !raw.includes(' ');
@@ -1103,7 +1104,7 @@ function openWeather(){
     </div>
   `, {width:380, height:280});
 }
-async function fetchWeather(){
+async async function fetchWeather(){
   const lat = document.getElementById('wLat').value, lon = document.getElementById('wLon').value;
   const el = document.getElementById('weatherResult');
   el.textContent = 'Loading real weather data...';
